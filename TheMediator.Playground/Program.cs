@@ -1,16 +1,19 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.OpenApi;
 using Scalar.AspNetCore;
 using TheMediator.Core;
+using TheMediator.Core.DependencyInjection;
 using TheMediator.Playground.Application;
 using TheMediator.Playground.Contracts.Products;
 using TheMediator.Playground.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddTheMediator(configurator =>
+builder.Services.AddTheMediator(configuration =>
 {
-    configurator.AddServicesFromAssemblies(typeof(Program).Assembly);
+    configuration.AddServicesFromAssemblies(typeof(Program).Assembly);
+    configuration.AddFilter<MeasureTimeRequestFilter>();
+    configuration.AddFilter<LoggerRequestFilter>();
 });
 
 builder.Services.AddSingleton<IProductsRepository, ProductsRepository>();
@@ -21,17 +24,6 @@ var app = builder.Build();
 app.MapOpenApi();
 app.MapScalarApiReference();
 app.UseHttpsRedirection();
-
-app.MapGet("/hello",
-        async (
-            [FromServices] ISender sender,
-            CancellationToken cancellationToken) =>
-        {
-            var request = "Mediator!!!!!";
-            var response = await sender.SendAsync<string, string>(request, cancellationToken);
-            return new { message = response };
-        })
-    .WithName("hello");
 
 app.MapPost("/products",
         async (
@@ -93,7 +85,7 @@ app.MapGet("/products/search",
             CancellationToken cancellationToken) =>
         {
             var response =
-                await sender.SendAsync<string?, IReadOnlyCollection<ProductResponse>?>(query,
+                await sender.SendAsync<string, IReadOnlyCollection<ProductResponse>?>(query ?? string.Empty,
                     cancellationToken);
             return response is { Count: > 0 }
                 ? Results.Ok(response)
@@ -102,11 +94,3 @@ app.MapGet("/products/search",
     .WithName("Products.Get.ProductSearchQuery");
 
 app.Run();
-
-public class HelloHandler : IHandler<string, string>
-{
-    public Task<string> HandleAsync(string request, CancellationToken cancellationToken)
-    {
-        return Task.FromResult($"Hello {request}");
-    }
-}

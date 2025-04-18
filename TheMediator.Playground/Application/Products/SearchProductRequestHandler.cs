@@ -3,8 +3,8 @@ using TheMediator.Playground.Contracts.Products;
 
 namespace TheMediator.Playground.Application.Products;
 
-public class SearchProductHandler(IProductsRepository repository)
-    : IHandler<string?, IReadOnlyCollection<ProductResponse>?>
+public class SearchProductRequestHandler(IProductsRepository repository)
+    : IRequestHandler<string, IReadOnlyCollection<ProductResponse>?>
 {
     public Task<IReadOnlyCollection<ProductResponse>?> HandleAsync(
         string? query,

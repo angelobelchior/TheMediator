@@ -1,12 +1,13 @@
 namespace TheMediator.Core;
 
-public interface IHandler<in TRequest, TResponse>
+public interface IRequestHandler<in TRequest, TResponse>
+    where TRequest : notnull
 {
     Task<TResponse> HandleAsync(TRequest request, CancellationToken cancellationToken);
 }
 
-public interface IHandler<in TRequest>
+public interface IRequestHandler<in TRequest>
+    where TRequest : notnull
 {
     Task HandleAsync(TRequest request, CancellationToken cancellationToken);
 }
-

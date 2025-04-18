@@ -3,7 +3,7 @@ using TheMediator.Playground.Contracts.Products;
 
 namespace TheMediator.Playground.Application.Products;
 
-public class UpdateProductHandler(IProductsRepository repository) : IHandler<ProductRequest>
+public class UpdateProductRequestHandler(IProductsRepository repository) : IRequestHandler<ProductRequest>
 {
     public Task HandleAsync(ProductRequest request, CancellationToken cancellationToken)
     {
