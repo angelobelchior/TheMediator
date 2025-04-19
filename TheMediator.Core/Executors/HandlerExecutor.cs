@@ -1,10 +1,12 @@
+using Microsoft.Extensions.Logging;
 using TheMediator.Core.Models;
 using TheMediator.Core.Registries;
-using Void = TheMediator.Core.Inspectors.Void;
+using Void = TheMediator.Core.Models.Void;
 
 namespace TheMediator.Core.Executors;
 
 internal class HandlerExecutor(
+    ILogger<HandlerExecutor> logger,
     IServiceProvider serviceProvider,
     HandlerRegistry handlerRegistry,
     FilterExecutor filterExecutor)
@@ -13,10 +15,16 @@ internal class HandlerExecutor(
         CancellationToken cancellationToken)
         where TRequest : notnull
     {
+        var handlerType = handlerRegistry.GetHandler<TRequest, TResponse>(ServiceCategory.Handler);
+        logger.LogInformation("Executing handler {HandlerType} for request type {RequestType} and response type {ResponseType}", 
+            handlerType.MainType.Name,
+            typeof(TRequest).Name,
+            typeof(TResponse).Name);
+        
         cancellationToken.ThrowIfCancellationRequested();
 
-        var handlerType = handlerRegistry.GetHandler<TRequest, TResponse>(ServiceCategory.Handler);
-        var handlerService = (IRequestHandler<TRequest, TResponse>)serviceProvider.GetRequiredService(handlerType.MainType);
+        var handlerService =
+            (IRequestHandler<TRequest, TResponse>)serviceProvider.GetRequiredService(handlerType.MainType);
 
         return filterExecutor.Execute(
             request,
@@ -27,9 +35,13 @@ internal class HandlerExecutor(
     public Task SendAsync<TRequest>(TRequest request, CancellationToken cancellationToken)
         where TRequest : notnull
     {
-        cancellationToken.ThrowIfCancellationRequested();
-
         var handlerType = handlerRegistry.GetHandler<TRequest, Void>(ServiceCategory.Handler);
+        logger.LogInformation("Executing handler {HandlerType} for request type {RequestType}", 
+            handlerType.MainType.Name,
+            typeof(TRequest).Name);
+        
+        cancellationToken.ThrowIfCancellationRequested();
+        
         var handlerService = (IRequestHandler<TRequest>)serviceProvider.GetRequiredService(handlerType.MainType);
 
         return filterExecutor.Execute(

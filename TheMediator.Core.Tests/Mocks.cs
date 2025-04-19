@@ -18,8 +18,8 @@ public class RequestRequestHandler : IRequestHandler<SampleRequest>
 
 public class SampleRequestFilter : IRequestFilter
 {
-    public Task FilterAsync<TRequest>(TRequest request, Func<Task> next, CancellationToken cancellationToken)
-        where TRequest : notnull
+    public Task<TResponse> FilterAsync<TRequest, TResponse>(TRequest request, Func<Task<TResponse>> next,
+        CancellationToken cancellationToken) where TRequest : notnull
     {
         throw new NotImplementedException();
     }
@@ -35,8 +35,10 @@ public class GenericHandler : IRequestHandler<string, int>
 
 public class NonGenericHandler : IRequestFilter
 {
-    public Task FilterAsync<TRequest>(TRequest request, Func<Task> next, CancellationToken cancellationToken)
-        where TRequest : notnull => Task.CompletedTask;
+    public Task<TResponse> FilterAsync<TRequest, TResponse>(TRequest request, Func<Task<TResponse>> next, CancellationToken cancellationToken) where TRequest : notnull
+    {
+        throw new NotImplementedException();
+    }
 }
 
 public class UnrelatedClass

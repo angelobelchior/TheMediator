@@ -1,8 +1,7 @@
 using TheMediator.Core.Models;
+using Void = TheMediator.Core.Models.Void;
 
 namespace TheMediator.Core.Inspectors;
-
-internal class Void;
 
 internal static class ServiceInspector
 {

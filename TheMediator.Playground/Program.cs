@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Scalar.AspNetCore;
 using TheMediator.Core;

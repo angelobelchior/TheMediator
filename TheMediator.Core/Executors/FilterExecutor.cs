@@ -19,7 +19,13 @@ internal class FilterExecutor(
                 (acc, source) => () =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    return source.FilterAsync(request, acc, cancellationToken);
+                    return source.FilterAsync(
+                        request,
+                        async () =>
+                        {
+                            await acc();
+                            return Models.Void.Null;
+                        }, cancellationToken);
                 });
         return task();
     }
@@ -34,12 +40,10 @@ internal class FilterExecutor(
             .Select(f => (IRequestFilter)serviceProvider.GetRequiredService(f.MainType))
             .Aggregate(
                 function,
-                (acc, source) => async () =>
+                (acc, source) => () =>
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    TResponse response = default!;
-                    await source.FilterAsync(request, async () => response = await acc(), cancellationToken);
-                    return response;
+                    return source.FilterAsync(request, acc, cancellationToken);
                 });
         return task();
     }

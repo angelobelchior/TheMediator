@@ -30,14 +30,14 @@ public class HandlerRegistryTests
         var registry = new HandlerRegistry(new ServiceCollection());
         
         var serviceDescriptor = new Models.ServiceDescriptor(
-            typeof(RequestRequestHandler), typeof(SampleRequest), typeof(TheMediator.Core.Inspectors.Void),
+            typeof(RequestRequestHandler), typeof(SampleRequest), typeof(Models.Void),
             ServiceCategory.Handler);
 
         // Act
         registry.Add<RequestRequestHandler>();
 
         // Assert
-        var handler = registry.GetHandler<SampleRequest, TheMediator.Core.Inspectors.Void>(ServiceCategory.Handler);
+        var handler = registry.GetHandler<SampleRequest, Models.Void>(ServiceCategory.Handler);
         Assert.Equal(serviceDescriptor, handler);
     }
 
