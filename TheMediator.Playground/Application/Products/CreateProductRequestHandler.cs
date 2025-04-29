@@ -3,11 +3,13 @@ using TheMediator.Playground.Contracts.Products;
 
 namespace TheMediator.Playground.Application.Products;
 
-public class CreateProductRequestHandler(IProductsRepository repository)
+public class CreateProductRequestHandler(IPublisher publisher, IProductsRepository repository)
     : IRequestHandler<ProductRequest, ProductResponse>
 {
-    public Task<ProductResponse> HandleAsync(ProductRequest request, CancellationToken cancellationToken)
+    public async Task<ProductResponse> HandleAsync(ProductRequest request, CancellationToken cancellationToken)
     {
-        return repository.Create(request, cancellationToken);
+        var created = await repository.Create(request, cancellationToken);
+        await publisher.PublishAsync(created, cancellationToken);
+        return created;
     }
 }

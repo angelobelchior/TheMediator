@@ -4,6 +4,10 @@ global using System.Threading.Tasks;
 global using System.Collections.Generic;
 global using System.Linq;
 global using System.Reflection;
+global using System.Diagnostics.CodeAnalysis;
+global using Microsoft.Extensions.Logging;
+
+global using TheMediator.Core.Models;
 
 global using Microsoft.Extensions.DependencyInjection;
 using System.Runtime.CompilerServices;

@@ -1,13 +1,14 @@
 using System.Diagnostics;
 using TheMediator.Core;
 
-namespace TheMediator.Playground.Application;
+namespace TheMediator.Playground.Filters;
 
 public class MeasureTimeRequestFilter(ILogger<MeasureTimeRequestFilter> logger)
     : IRequestFilter
 {
     public Task<TResponse> FilterAsync<TRequest, TResponse>(TRequest request, Func<Task<TResponse>> next,
-        CancellationToken cancellationToken) where TRequest : notnull
+        CancellationToken cancellationToken)         
+        where TRequest : notnull
     {
         logger.LogInformation("Started measuring time for {Type} at {Time}", request.GetType().Name, DateTime.Now);
         

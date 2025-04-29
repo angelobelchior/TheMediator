@@ -1,14 +1,21 @@
-using System.Diagnostics.CodeAnalysis;
 using TheMediator.Core.Executors;
 using TheMediator.Core.Inspectors;
-using TheMediator.Core.Models;
 using TheMediator.Core.Registries;
 
 namespace TheMediator.Core.DependencyInjection;
 
+/// <summary>
+/// Dependency injection extension methods for TheMediator.
+/// </summary>
 [ExcludeFromCodeCoverage]
 public static class DependencyInjection
 {
+    /// <summary>
+    /// Adds TheMediator services to the specified <see cref="IServiceCollection"/>.
+    /// </summary>
+    /// <param name="services">Service Collection</param>
+    /// <param name="configurator">Configuration action to set up TheMediator services.</param>
+    /// <returns>Service Collection</returns>
     public static IServiceCollection AddTheMediator(
         this IServiceCollection services,
         Action<Configuration> configurator)
@@ -18,23 +25,49 @@ public static class DependencyInjection
 
         services.AddSingleton<HandlerRegistry>(_ => configuration.Handlers);
         services.AddSingleton<FilterRegistry>(_ => configuration.Filters);
-        //services.AddSingleton<NotificationRegistry>(_ => configuration.Notifications);
+        services.AddSingleton<NotifierRegistry>(_ => configuration.Notifiers);
 
         services.AddSingleton<FilterExecutor>();
-        //services.AddSingleton<NotificationExecutor>();
+        services.AddSingleton<NotifierExecutor>();
         services.AddSingleton<HandlerExecutor>();
 
         services.AddSingleton<ISender, Sender>();
+        services.AddSingleton<IPublisher, Publisher>();
 
         return services;
     }
 
-    public class Configuration(IServiceCollection services)
+    /// <summary>
+    /// Configuration class for TheMediator services.
+    /// </summary>
+    public class Configuration
     {
-        internal HandlerRegistry Handlers { get; } = new(services);
-        internal FilterRegistry Filters { get; } = new(services);
-        //internal NotificationRegistry Notifications { get; } = new(services);
+        /// <summary>
+        /// Handler registry for TheMediator.
+        /// </summary>
+        public HandlerRegistry Handlers { get; }
+        /// <summary>
+        /// Filter registry for TheMediator.
+        /// </summary>
+        public FilterRegistry Filters { get; }
+        /// <summary>
+        /// Notifier registry for TheMediator.
+        /// </summary>
+        public NotifierRegistry Notifiers { get; }
 
+        internal Configuration(IServiceCollection services)
+        {
+            Handlers = new(services);
+            Filters = new(services);
+            Notifiers = new(services);
+        }
+
+        /// <summary>
+        /// Adds services from the specified assemblies to TheMediator.
+        /// </summary>
+        /// <param name="assemblies">Assemblies</param>
+        /// <returns>Configuration</returns>
+        /// <exception cref="ArgumentNullException">When assemblies is null or empty</exception>
         public Configuration AddServicesFromAssemblies(params Assembly[] assemblies)
         {
             if (assemblies is null || assemblies.Length == 0)
@@ -48,19 +81,10 @@ public static class DependencyInjection
                 {
                     if (serviceDescriptor.Category == ServiceCategory.Handler)
                         Handlers.Add(serviceDescriptor);
-
-                    //TODO: Incluir notificações...
-                    // if (serviceDescriptor.Category == ServiceCategory.Notification)
-                    //     Notifications.Add(serviceDescriptor);
+                    if (serviceDescriptor.Category == ServiceCategory.Notification)
+                        Notifiers.Add(serviceDescriptor);
                 });
 
-            return this;
-        }
-
-        public Configuration AddFilter<TFilter>()
-            where TFilter : class, IRequestFilter
-        {
-            Filters.Add<TFilter>();
             return this;
         }
     }

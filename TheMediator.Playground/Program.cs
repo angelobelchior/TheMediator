@@ -2,8 +2,10 @@ using Microsoft.AspNetCore.Mvc;
 using Scalar.AspNetCore;
 using TheMediator.Core;
 using TheMediator.Core.DependencyInjection;
+using TheMediator.Core.Models;
 using TheMediator.Playground.Application;
 using TheMediator.Playground.Contracts.Products;
+using TheMediator.Playground.Filters;
 using TheMediator.Playground.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,8 +13,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddTheMediator(configuration =>
 {
     configuration.AddServicesFromAssemblies(typeof(Program).Assembly);
-    configuration.AddFilter<MeasureTimeRequestFilter>();
-    configuration.AddFilter<LoggerRequestFilter>();
+    
+    configuration.Notifiers.Configurations.DeliveryMode = NotificationDeliveryMode.FireAndForget;
+    
+    configuration.Filters.Add<MeasureTimeRequestFilter>();
+    configuration.Filters.Add<LoggerRequestFilter>();
+
 });
 
 builder.Services.AddSingleton<IProductsRepository, ProductsRepository>();

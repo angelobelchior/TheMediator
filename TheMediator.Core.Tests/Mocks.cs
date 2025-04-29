@@ -41,12 +41,19 @@ public class NonGenericHandler : IRequestFilter
     }
 }
 
-public class UnrelatedClass
+public class SampleNotification : INotificationHandler<SampleMessage>
 {
+    public Task HandleAsync(SampleMessage notification, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
 }
+
+public class UnrelatedClass;
 
 public class InvalidType;
 
+public class SampleMessage;
 public class SampleRequest;
 
 public class SampleResponse;

@@ -1,52 +1,70 @@
-using Microsoft.Extensions.Logging;
-using TheMediator.Core.Models;
 using TheMediator.Core.Registries;
 using Void = TheMediator.Core.Models.Void;
 
 namespace TheMediator.Core.Executors;
 
 internal class HandlerExecutor(
-    ILogger<HandlerExecutor> logger,
+    ILoggerFactory loggerFactory,
     IServiceProvider serviceProvider,
     HandlerRegistry handlerRegistry,
-    FilterExecutor filterExecutor)
+    FilterExecutor filterExecutor) : IDisposable
 {
+    private readonly ILogger logger = loggerFactory.CreateLogger(Constants.LogCategoryName);
+
     public Task<TResponse> SendAsync<TRequest, TResponse>(TRequest request,
         CancellationToken cancellationToken)
         where TRequest : notnull
     {
-        var handlerType = handlerRegistry.GetHandler<TRequest, TResponse>(ServiceCategory.Handler);
-        logger.LogInformation("Executing handler {HandlerType} for request type {RequestType} and response type {ResponseType}", 
+        var handlerType = handlerRegistry.GetHandler<TRequest, TResponse>();
+        logger.LogTrace(
+            "Executing handler {HandlerType} for request type {RequestType} and response type {ResponseType}",
             handlerType.MainType.Name,
             typeof(TRequest).Name,
             typeof(TResponse).Name);
-        
+
         cancellationToken.ThrowIfCancellationRequested();
 
         var handlerService =
             (IRequestHandler<TRequest, TResponse>)serviceProvider.GetRequiredService(handlerType.MainType);
 
-        return filterExecutor.Execute(
+        var response = filterExecutor.Execute(
             request,
             () => handlerService.HandleAsync(request, cancellationToken),
             cancellationToken);
+
+        logger.LogTrace(
+            "Handler {HandlerType} for request type {RequestType} and response type {ResponseType} executed successfully",
+            handlerType.MainType.Name,
+            typeof(TRequest).Name,
+            typeof(TResponse).Name);
+
+        return response;
     }
 
     public Task SendAsync<TRequest>(TRequest request, CancellationToken cancellationToken)
         where TRequest : notnull
     {
-        var handlerType = handlerRegistry.GetHandler<TRequest, Void>(ServiceCategory.Handler);
-        logger.LogInformation("Executing handler {HandlerType} for request type {RequestType}", 
+        var handlerType = handlerRegistry.GetHandler<TRequest, Void>();
+        logger.LogTrace("Executing handler {HandlerType} for request type {RequestType}",
             handlerType.MainType.Name,
             typeof(TRequest).Name);
-        
+
         cancellationToken.ThrowIfCancellationRequested();
-        
+
         var handlerService = (IRequestHandler<TRequest>)serviceProvider.GetRequiredService(handlerType.MainType);
 
-        return filterExecutor.Execute(
+        var response = filterExecutor.Execute(
             request,
             () => handlerService.HandleAsync(request, cancellationToken),
             cancellationToken);
+
+        logger.LogTrace("Handler {HandlerType} for request type {RequestType} executed successfully",
+            handlerType.MainType.Name,
+            typeof(TRequest).Name);
+
+        return response;
     }
+
+    public void Dispose()
+        => loggerFactory.Dispose();
 }

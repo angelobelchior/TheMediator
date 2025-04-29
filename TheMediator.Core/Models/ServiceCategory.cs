@@ -4,5 +4,5 @@ internal enum ServiceCategory
 {
     Handler,
     Filter,
-    //Notification
+    Notification
 }
