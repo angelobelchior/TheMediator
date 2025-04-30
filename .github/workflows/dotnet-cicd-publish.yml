@@ -28,8 +28,8 @@ jobs:
     - name: Tests
       run: dotnet test -c Release --verbosity normal
 
-#    - name: Pack project
-#      run: dotnet pack ./src/Html2Pdf.Lib.csproj -c Release --no-build --output ./artifacts
-#
-#    - name: Publish to NuGet
-#      run: dotnet nuget push ./artifacts/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate
+    - name: Pack project
+      run: dotnet pack ./TheMediator.Core/TheMediator.Core.csproj -c Release --no-build --output ./artifacts
+
+    - name: Publish to NuGet
+      run: dotnet nuget push ./artifacts/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate

@@ -8,7 +8,32 @@
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <EnableNETAnalyzers>true</EnableNETAnalyzers>
         <WarningsAsErrors>CA2000</WarningsAsErrors>
+        <NoWarn>1701;1702;NU5100;NU5104</NoWarn>
+        <LangVersion>latestmajor</LangVersion>
+
+        <Version>1.0.0</Version>
+        <Authors>Angelo Belchior</Authors>
+        <Title>A Free and Open-Source Mediator Pattern Implementation for .NET</Title>
+        <Description>
+            High-performance Mediator library for .NET with support for Filters and Notifications — lightweight, extensible, and fast.
+        </Description>
+        <PackageId>TheMediator</PackageId>
+        <PackageIcon>icon.png</PackageIcon>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageProjectUrl>https://github.com/angelobelchior/TheMediator</PackageProjectUrl>
+        <PackageTags>csharp dotnet .net mediator mediatr</PackageTags>
+        <IsPackable>true</IsPackable>
+        <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="icon.png" Pack="true" PackagePath="\" />
+        <None Include="..\README.md" Pack="true" PackagePath="\" />
+        <None Update="icon.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.4" />
