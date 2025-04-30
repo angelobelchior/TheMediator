@@ -102,7 +102,6 @@ Exemplo de uso:
 
 ```csharp
 public class LoggingFilter<TRequest, TResponse> : IFilter<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
 {
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next)
     {
