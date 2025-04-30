@@ -19,8 +19,11 @@ jobs:
       with:
         dotnet-version: 9.0.x
     
-    - name: Restore dependencies
+    - name: Restore
       run: dotnet restore
     
     - name: Build
       run: dotnet build -c Release --no-restore
+
+    - name: Tests
+      run: dotnet test TheMediator.Core.Tests/TheMediator.Core.Tests.csproj --no-build --verbosity normal

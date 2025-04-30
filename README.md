@@ -1,5 +1,7 @@
 # TheMediator 
 
+[![.NET](https://github.com/angelobelchior/TheMediator/actions/workflows/dotnet-cicd-publish.yml/badge.svg)](https://github.com/angelobelchior/TheMediator/actions/workflows/dotnet-cicd-publish.yml)
+
 Esse projeto faz parte da saga "Reinventando a Roda: Criando seu próprio MediatR", onde eu crio uma implementação própria do Mediator, um padrão de design que ajuda a desacoplar componentes em um sistema.
 
 Foram 3 posts no total:
