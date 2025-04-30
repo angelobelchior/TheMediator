@@ -7,7 +7,7 @@
 **TheMediator** é uma implementação de alto desempenho do padrão Mediator para .NET, com suporte a **Filters** e **Notifications**. 
 É leve, extensível e rápido, ideal para desacoplar componentes em sistemas.
 
-Esse projeto faz parte da saga "Reinventando a Roda: Criando seu próprio MediatR", onde eu crio uma implementação própria do Mediator, um padrão de design que ajuda a desacoplar componentes em um sistema.
+Esse projeto faz parte da saga "Reinventando a Roda: Criando seu próprio MediatR", onde eu crio uma implementação própria.
 
 Foram 3 posts no total:
 
