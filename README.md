@@ -101,13 +101,16 @@ Exemplo de uso:
 
 
 ```csharp
-public class LoggingFilter<TRequest, TResponse> : IFilter<TRequest, TResponse>
+public class LoggerRequestFilter(ILogger<LoggerRequestFilter> logger)
+    : IRequestFilter
 {
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next)
+    public Task<TResponse> FilterAsync<TRequest, TResponse>(TRequest request, Func<Task<TResponse>> next,
+        CancellationToken cancellationToken)
+        where TRequest : notnull
     {
-        Console.WriteLine($"Handling {typeof(TRequest).Name}");
-        var response = await next();
-        Console.WriteLine($"Handled {typeof(TRequest).Name}");
+        logger.LogInformation("{Type} execution started: {Time}", request.GetType().Name, DateTime.Now);
+        var response = next();
+        logger.LogInformation("{Type} execution finished: {Time}", request.GetType().Name, DateTime.Now);
         return response;
     }
 }
@@ -126,7 +129,7 @@ As `Notifications` são registrados automaticamente pelo método `AddServicesFro
 Exemplo de uso:
 
 ```csharp
-public class LogInfoProductCreatedNotification(ILogger<CreateProductNotification> logger)
+public class LogInfoProductCreatedNotification(ILogger<LogInfoProductCreatedNotification> logger)
     : INotificationHandler<ProductResponse>
 {
     public async Task HandleAsync(ProductResponse notification, CancellationToken cancellationToken)
@@ -136,7 +139,7 @@ public class LogInfoProductCreatedNotification(ILogger<CreateProductNotification
     }
 }
 
-public class SendEmailProductCreatedNotification(ILogger<CreateProductNotification> logger, IEmailService emailService)
+public class SendEmailProductCreatedNotification(ILogger<SendEmailProductCreatedNotification> logger, IEmailService emailService)
     : INotificationHandler<ProductResponse>
 {
     public async Task HandleAsync(ProductResponse notification, CancellationToken cancellationToken)
