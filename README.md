@@ -4,6 +4,8 @@
 
 [![.NET](https://github.com/angelobelchior/TheMediator/actions/workflows/dotnet-cicd-publish.yml/badge.svg)](https://github.com/angelobelchior/TheMediator/actions/workflows/dotnet-cicd-publish.yml)
 
+[![NuGet](https://img.shields.io/nuget/v/TheMediator.svg)](https://www.nuget.org/packages/TheMediator)
+
 **TheMediator** é uma implementação de alto desempenho do padrão Mediator para .NET, com suporte a **Filters** e **Notifications**. 
 É leve, extensível e rápido, ideal para desacoplar componentes em sistemas.
 
