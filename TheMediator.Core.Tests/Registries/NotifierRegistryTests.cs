@@ -20,7 +20,7 @@ public class NotifierRegistryTests
         // Assert
         var serviceDescriptor = _services.FirstOrDefault(s => s.ServiceType == typeof(SampleNotification));
         Assert.NotNull(serviceDescriptor);
-        Assert.Equal(ServiceLifetime.Singleton, serviceDescriptor.Lifetime);
+        Assert.Equal(ServiceLifetime.Scoped, serviceDescriptor.Lifetime);
     }
 
     [Fact]
