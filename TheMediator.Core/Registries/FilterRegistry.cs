@@ -27,7 +27,7 @@ public class FilterRegistry(IServiceCollection services)
             throw new InvalidOperationException($"{serviceDescriptor.MainType} is not a filter type!");
 
         _filters.Push(serviceDescriptor);
-        services.AddSingleton(serviceDescriptor.MainType);
+        services.AddScoped(serviceDescriptor.MainType);
     }
 
     internal IEnumerable<Models.ServiceDescriptor> ListFiltersWithRequest<TRequest>()

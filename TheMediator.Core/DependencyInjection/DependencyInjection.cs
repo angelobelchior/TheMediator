@@ -23,16 +23,16 @@ public static class DependencyInjection
         var configuration = new Configuration(services);
         configurator(configuration);
 
-        services.AddSingleton<HandlerRegistry>(_ => configuration.Handlers);
-        services.AddSingleton<FilterRegistry>(_ => configuration.Filters);
-        services.AddSingleton<NotifierRegistry>(_ => configuration.Notifiers);
+        services.AddScoped<HandlerRegistry>(_ => configuration.Handlers);
+        services.AddScoped<FilterRegistry>(_ => configuration.Filters);
+        services.AddScoped<NotifierRegistry>(_ => configuration.Notifiers);
 
-        services.AddSingleton<FilterExecutor>();
-        services.AddSingleton<NotifierExecutor>();
-        services.AddSingleton<HandlerExecutor>();
+        services.AddScoped<FilterExecutor>();
+        services.AddScoped<NotifierExecutor>();
+        services.AddScoped<HandlerExecutor>();
 
-        services.AddSingleton<ISender, Sender>();
-        services.AddSingleton<IPublisher, Publisher>();
+        services.AddScoped<ISender, Sender>();
+        services.AddScoped<IPublisher, Publisher>();
 
         return services;
     }

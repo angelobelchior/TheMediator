@@ -45,7 +45,7 @@ public class NotifierRegistry(IServiceCollection services)
                 $"The Notification {current.MainType} is already registered");
 
         _notifications.Add(serviceDescriptor);
-        services.AddSingleton(serviceDescriptor.MainType);
+        services.AddScoped(serviceDescriptor.MainType);
     }
 
     internal IReadOnlyCollection<Models.ServiceDescriptor> ListNotifiersByMessageType<TMessageType>()

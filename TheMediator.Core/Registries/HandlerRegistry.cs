@@ -37,7 +37,7 @@ public class HandlerRegistry(IServiceCollection services)
                 $"The handler {current.MainType} is already registered with the same request {serviceDescriptor.RequestType} and response {serviceDescriptor.ResponseType} types.");
 
         _handlers.Add(serviceDescriptor);
-        services.AddSingleton(serviceDescriptor.MainType);
+        services.AddScoped(serviceDescriptor.MainType);
     }
 
     internal ServiceDescriptor GetHandler<TRequest, TResponse>()

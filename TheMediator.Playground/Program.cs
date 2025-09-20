@@ -21,7 +21,7 @@ builder.Services.AddTheMediator(configuration =>
 
 });
 
-builder.Services.AddSingleton<IProductsRepository, ProductsRepository>();
+builder.Services.AddScoped<IProductsRepository, ProductsRepository>();
 
 builder.Services.AddOpenApi();
 
