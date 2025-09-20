@@ -5,7 +5,7 @@ namespace TheMediator.Core.Executors;
 internal class FilterExecutor(
     ILoggerFactory loggerFactory,
     IServiceProvider serviceProvider,
-    FilterRegistry filterRegistry) : IDisposable
+    FilterRegistry filterRegistry)
 {
     private readonly ILogger logger = loggerFactory.CreateLogger(Constants.LogCategoryName);
     
@@ -89,7 +89,4 @@ internal class FilterExecutor(
                 });
         return task();
     }
-
-    public void Dispose()
-        => loggerFactory.Dispose();
 }

@@ -6,7 +6,7 @@ namespace TheMediator.Core.Executors;
 internal class NotifierExecutor(
     ILoggerFactory loggerFactory,
     IServiceProvider serviceProvider,
-    NotifierRegistry notifierRegistry) : IDisposable
+    NotifierRegistry notifierRegistry) 
 {
     private readonly ILogger logger = loggerFactory.CreateLogger(Constants.LogCategoryName);
 
@@ -71,7 +71,4 @@ internal class NotifierExecutor(
             }
         }
     }
-
-    public void Dispose()
-        => loggerFactory.Dispose();
 }

@@ -7,7 +7,7 @@ internal class HandlerExecutor(
     ILoggerFactory loggerFactory,
     IServiceProvider serviceProvider,
     HandlerRegistry handlerRegistry,
-    FilterExecutor filterExecutor) : IDisposable
+    FilterExecutor filterExecutor)
 {
     private readonly ILogger logger = loggerFactory.CreateLogger(Constants.LogCategoryName);
 
@@ -64,7 +64,4 @@ internal class HandlerExecutor(
 
         return response;
     }
-
-    public void Dispose()
-        => loggerFactory.Dispose();
 }
