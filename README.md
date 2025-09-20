@@ -22,7 +22,7 @@ Foram 3 posts no total:
 Você pode instalar o pacote via NuGet usando o seguinte comando:
 
 ```bash
-dotnet add package TheMediator --version 1.0.0
+dotnet add package TheMediator --version 1.0.1
 ```
 
 Feito isso, você pode registrar o Mediator no seu projeto:
