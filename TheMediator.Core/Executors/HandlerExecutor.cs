@@ -1,5 +1,4 @@
 using TheMediator.Core.Registries;
-using Void = TheMediator.Core.Models.Void;
 
 namespace TheMediator.Core.Executors;
 
@@ -44,7 +43,7 @@ internal class HandlerExecutor(
     public Task SendAsync<TRequest>(TRequest request, CancellationToken cancellationToken)
         where TRequest : notnull
     {
-        var handlerType = handlerRegistry.GetHandler<TRequest, Void>();
+        var handlerType = handlerRegistry.GetHandler<TRequest>();
         logger.LogTrace("Executing handler {HandlerType} for request type {RequestType}",
             handlerType.MainType.Name,
             typeof(TRequest).Name);

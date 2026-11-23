@@ -8,49 +8,20 @@ internal class FilterExecutor(
     FilterRegistry filterRegistry)
 {
     private readonly ILogger logger = loggerFactory.CreateLogger(Constants.LogCategoryName);
-    
+
     public Task Execute<TRequest>(
         TRequest request,
         Func<Task> function,
         CancellationToken cancellationToken)
         where TRequest : notnull
-    {
-        var task = filterRegistry.ListFiltersWithRequest<TRequest>()
-            .Select(f => serviceProvider.GetRequiredService(f.MainType))
-            .Aggregate(
-                function,
-                (acc, source) => () =>
-                {
-                    logger.LogTrace(
-                        "Executing filter {Filter} for request {Request}",
-                        source.GetType().Name,
-                        request.GetType().Name);
-
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    var next = async () =>
-                    {
-                        await acc();
-                        return Models.Void.Null;
-                    };
-
-                    var response = source switch
-                    {
-                        IRequestFilter filter => filter.FilterAsync(request, next, cancellationToken),
-                        IRequestFilter<TRequest> requestFilter => requestFilter.FilterAsync(request, next,
-                            cancellationToken),
-                        _ => Task.CompletedTask
-                    };
-
-                    logger.LogTrace(
-                        "Executed filter {Filter} for request {Request}",
-                        source.GetType().Name,
-                        request.GetType().Name);
-
-                    return response;
-                });
-        return task();
-    }
+        => Execute<TRequest, Models.Void>(
+            request,
+            async () =>
+            {
+                await function();
+                return Models.Void.Null;
+            },
+            cancellationToken);
 
     public Task<TResponse> Execute<TRequest, TResponse>(
         TRequest request,
@@ -87,6 +58,7 @@ internal class FilterExecutor(
 
                     return response;
                 });
+
         return task();
     }
 }

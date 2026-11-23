@@ -2,54 +2,33 @@ using TheMediator.Core.Inspectors;
 
 namespace TheMediator.Core.Registries;
 
-/// <summary>
-/// Notifier registry.
-/// </summary>
-/// <param name="services">Service Collection</param>
-public class NotifierRegistry(IServiceCollection services) 
+public class NotifierRegistry : ServiceRegistry<Models.NotificationDescriptor>
 {
-    private readonly List<Models.ServiceDescriptor> _notifications = new();
+    public NotifierRegistry()
+        : base(ServiceInspector.CreateNotificationDescriptor)
+    {
+    }
 
-    /// <summary>
-    /// Configuration for the notifier registry. <see cref="NotificationConfiguration"/>
-    /// </summary>
+    private readonly List<Models.NotificationDescriptor> _notifications = new();
+
     [ExcludeFromCodeCoverage]
     public NotificationConfiguration Configurations { get; set; } = NotificationConfiguration.None;
 
-    
-    /// <summary>
-    /// Adds a notifier to the registry.
-    /// </summary>
-    /// <typeparam name="TService">Service Collection</typeparam>
-    public void Add<TService>()
-        where TService : notnull
-    {
-        var mainType = typeof(TService);
-        var service = ServiceInspector.CreateService(mainType, ServiceCategory.Notification);
-        Add(service);
-    }
+    protected override IEnumerable<Models.NotificationDescriptor> Entries => _notifications;
 
-    internal void Add(Models.ServiceDescriptor serviceDescriptor)
+    protected override void EnsureUnique(Models.NotificationDescriptor descriptor)
     {
-        if (serviceDescriptor.Category != ServiceCategory.Notification)
-            throw new InvalidOperationException($"{serviceDescriptor.MainType} is not a notification type!");
-
         var current = _notifications.FirstOrDefault(s =>
-            s.MainType == serviceDescriptor.MainType &&
-            s.RequestType == serviceDescriptor.RequestType &&
-            s.ResponseType == Models.Void.Type &&
-            s.Category == serviceDescriptor.Category);
+            s.MainType == descriptor.MainType &&
+            s.MessageType == descriptor.MessageType);
         if (current is not null)
             throw new InvalidOperationException(
-                $"Cannot register {serviceDescriptor.MainType}!.\n" +
+                $"Cannot register {descriptor.MainType}!.\n" +
                 $"The Notification {current.MainType} is already registered");
-
-        _notifications.Add(serviceDescriptor);
-        services.AddScoped(serviceDescriptor.MainType);
     }
 
-    internal IReadOnlyCollection<Models.ServiceDescriptor> ListNotifiersByMessageType<TMessageType>()
-        => _notifications.Where(s => s.RequestType == typeof(TMessageType) &&
-                                     s.ResponseType == Models.Void.Type &&
-                                     s.Category == ServiceCategory.Notification).ToList();
+    protected override void Insert(Models.NotificationDescriptor descriptor) => _notifications.Add(descriptor);
+
+    internal IReadOnlyCollection<Models.NotificationDescriptor> ListNotifiersByMessageType<TMessageType>()
+        => _notifications.Where(s => s.MessageType == typeof(TMessageType)).ToList();
 }

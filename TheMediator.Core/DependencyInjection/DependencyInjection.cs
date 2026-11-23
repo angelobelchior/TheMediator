@@ -20,12 +20,17 @@ public static class DependencyInjection
         this IServiceCollection services,
         Action<Configuration> configurator)
     {
-        var configuration = new Configuration(services);
+        var configuration = new Configuration();
         configurator(configuration);
 
-        services.AddScoped<HandlerRegistry>(_ => configuration.Handlers);
-        services.AddScoped<FilterRegistry>(_ => configuration.Filters);
-        services.AddScoped<NotifierRegistry>(_ => configuration.Notifiers);
+        foreach (var serviceType in configuration.Handlers.ServiceTypes
+                     .Concat(configuration.Filters.ServiceTypes)
+                     .Concat(configuration.Notifiers.ServiceTypes))
+            services.AddScoped(serviceType);
+
+        services.AddSingleton(configuration.Handlers);
+        services.AddSingleton(configuration.Filters);
+        services.AddSingleton(configuration.Notifiers);
 
         services.AddScoped<FilterExecutor>();
         services.AddScoped<NotifierExecutor>();
@@ -45,22 +50,17 @@ public static class DependencyInjection
         /// <summary>
         /// Handler registry for TheMediator.
         /// </summary>
-        public HandlerRegistry Handlers { get; }
+        public HandlerRegistry Handlers { get; } = new();
+
         /// <summary>
         /// Filter registry for TheMediator.
         /// </summary>
-        public FilterRegistry Filters { get; }
+        public FilterRegistry Filters { get; } = new();
+
         /// <summary>
         /// Notifier registry for TheMediator.
         /// </summary>
-        public NotifierRegistry Notifiers { get; }
-
-        internal Configuration(IServiceCollection services)
-        {
-            Handlers = new(services);
-            Filters = new(services);
-            Notifiers = new(services);
-        }
+        public NotifierRegistry Notifiers { get; } = new();
 
         /// <summary>
         /// Adds services from the specified assemblies to TheMediator.
@@ -79,10 +79,15 @@ public static class DependencyInjection
                 .ToList()
                 .ForEach(serviceDescriptor =>
                 {
-                    if (serviceDescriptor.Category == ServiceCategory.Handler)
-                        Handlers.Add(serviceDescriptor);
-                    if (serviceDescriptor.Category == ServiceCategory.Notification)
-                        Notifiers.Add(serviceDescriptor);
+                    switch (serviceDescriptor)
+                    {
+                        case HandlerDescriptor handler:
+                            Handlers.Add(handler);
+                            break;
+                        case NotificationDescriptor notification:
+                            Notifiers.Add(notification);
+                            break;
+                    }
                 });
 
             return this;

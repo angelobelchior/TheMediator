@@ -1,5 +1,4 @@
 using TheMediator.Core.Models;
-using Microsoft.Extensions.DependencyInjection;
 using TheMediator.Core.Registries;
 
 namespace TheMediator.Core.Tests.Registries;
@@ -7,124 +6,112 @@ namespace TheMediator.Core.Tests.Registries;
 public class HandlerRegistryTests
 {
     [Fact]
-    public void AddGenericRequestResponse_ShouldAddServiceDescriptorToHandlers()
+    public void AddGenericRequestResponse_ShouldAddHandlerDescriptor()
     {
         // Arrange
-        var registry = new HandlerRegistry(new ServiceCollection());
+        var registry = new HandlerRegistry();
 
-        var serviceDescriptor = new Models.ServiceDescriptor(
+        var handlerDescriptor = new HandlerDescriptor(
             typeof(RequestResponseRequestHandler),
             typeof(SampleRequest),
-            typeof(SampleResponse),
-            ServiceCategory.Handler);
-
+            typeof(SampleResponse));
 
         // Act
         registry.Add<RequestResponseRequestHandler>();
 
         // Assert
         var handler = registry.GetHandler<SampleRequest, SampleResponse>();
-        Assert.Equal(serviceDescriptor, handler);
+        Assert.Equal(handlerDescriptor, handler);
     }
 
     [Fact]
-    public void AddGenericRequest_ShouldAddServiceDescriptorToHandlers()
+    public void AddGenericRequest_ShouldAddVoidHandlerDescriptor()
     {
         // Arrange
-        var registry = new HandlerRegistry(new ServiceCollection());
+        var registry = new HandlerRegistry();
 
-        var serviceDescriptor = new Models.ServiceDescriptor(
+        var handlerDescriptor = new HandlerDescriptor(
             typeof(RequestRequestHandler),
             typeof(SampleRequest),
-            typeof(Models.Void),
-            ServiceCategory.Handler);
+            null);
 
         // Act
         registry.Add<RequestRequestHandler>();
 
         // Assert
-        var handler = registry.GetHandler<SampleRequest, Models.Void>();
-        Assert.Equal(serviceDescriptor, handler);
+        var handler = registry.GetHandler<SampleRequest>();
+        Assert.Equal(handlerDescriptor, handler);
     }
 
     [Fact]
-    public void AddService_ShouldAddServiceDescriptorToHandlers()
+    public void AddService_ShouldAddHandlerDescriptor()
     {
         // Arrange
-        var registry = new HandlerRegistry(new ServiceCollection());
+        var registry = new HandlerRegistry();
 
-        // Arrange
-        var serviceDescriptor = new Models.ServiceDescriptor(
-            typeof(string), typeof(int), typeof(bool), ServiceCategory.Handler);
+        var handlerDescriptor = new HandlerDescriptor(typeof(string), typeof(int), typeof(bool));
 
         // Act
-        registry.Add(serviceDescriptor);
+        registry.Add(handlerDescriptor);
 
         // Assert
         var handler = registry.GetHandler<int, bool>();
-        Assert.Equal(serviceDescriptor, handler);
+        Assert.Equal(handlerDescriptor, handler);
     }
 
     [Fact]
     public void Add_ShouldThrowInvalidOperationException_WhenDuplicateHandlerIsAdded()
     {
         // Arrange
-        var registry = new HandlerRegistry(new ServiceCollection());
+        var registry = new HandlerRegistry();
 
-        // Arrange
-        var serviceDescriptor = new Models.ServiceDescriptor(
-            typeof(string), typeof(int), typeof(bool), ServiceCategory.Handler);
+        var handlerDescriptor = new HandlerDescriptor(typeof(string), typeof(int), typeof(bool));
 
-        registry.Add(serviceDescriptor);
+        registry.Add(handlerDescriptor);
 
         // Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>
-            registry.Add(serviceDescriptor));
+            registry.Add(handlerDescriptor));
 
         Assert.Contains("Cannot register", exception.Message);
     }
 
     [Fact]
-    public void Add_ShouldRegisterHandlerInServiceCollection()
+    public void Add_ShouldExposeHandlerType()
     {
         // Arrange
-        var services = new ServiceCollection();
-        var registry = new HandlerRegistry(services);
+        var registry = new HandlerRegistry();
 
         // Act
         registry.Add<RequestResponseRequestHandler>();
 
         // Assert
-        var serviceProvider = services.BuildServiceProvider();
-        var handler = serviceProvider.GetService(typeof(RequestResponseRequestHandler));
-        Assert.NotNull(handler);
+        Assert.Contains(typeof(RequestResponseRequestHandler), registry.ServiceTypes);
     }
 
     [Fact]
-    public void GetHandler_ShouldReturnCorrectServiceDescriptor()
+    public void GetHandler_ShouldReturnCorrectHandlerDescriptor()
     {
         // Arrange
-        var registry = new HandlerRegistry(new ServiceCollection());
+        var registry = new HandlerRegistry();
 
-        // Arrange
-        var serviceDescriptor = new Models.ServiceDescriptor(
-            typeof(string), typeof(int), typeof(bool), ServiceCategory.Handler);
+        var handlerDescriptor = new HandlerDescriptor(typeof(string), typeof(int), typeof(bool));
 
-        registry.Add(serviceDescriptor);
+        registry.Add(handlerDescriptor);
 
         // Act
         var handler = registry.GetHandler<int, bool>();
 
         // Assert
         Assert.NotNull(handler);
-        Assert.Equal(serviceDescriptor, handler);
+        Assert.Equal(handlerDescriptor, handler);
     }
 
     [Fact]
     public void GetHandler_ShouldThrowInvalidOperationException_WhenHandlerNotFound()
     {
         // Arrange
-        var registry = new HandlerRegistry(new ServiceCollection());
+        var registry = new HandlerRegistry();
 
         // Act & Assert
         var exception = Assert.Throws<InvalidOperationException>(() =>

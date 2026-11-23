@@ -1,4 +1,3 @@
-using System.Threading.Channels;
 using TheMediator.Core.Registries;
 
 namespace TheMediator.Core.Executors;
@@ -6,69 +5,76 @@ namespace TheMediator.Core.Executors;
 internal class NotifierExecutor(
     ILoggerFactory loggerFactory,
     IServiceProvider serviceProvider,
-    NotifierRegistry notifierRegistry) 
+    NotifierRegistry notifierRegistry)
 {
     private readonly ILogger logger = loggerFactory.CreateLogger(Constants.LogCategoryName);
 
-    public async Task PublishAsync<TMessage>(TMessage message, CancellationToken cancellationToken)
+    public Task PublishAsync<TMessage>(TMessage message, CancellationToken cancellationToken)
         where TMessage : notnull
     {
-        var services = notifierRegistry.ListNotifiersByMessageType<TMessage>();
-        if (services.Count == 0) return;
+        var handlers = ResolveHandlers<TMessage>();
+        if (handlers.Count == 0)
+            return Task.CompletedTask;
 
-        var channel = Channel.CreateBounded<Func<Task>>(new BoundedChannelOptions(services.Count));
-
-        var sender = Task.Run(() => SendNotificationsAsync(message, services, channel, cancellationToken),
-            cancellationToken);
-        var receiver = Task.Run(() => ExecuteHandlersAsync(channel, cancellationToken), cancellationToken);
-
-        await Task.WhenAll(sender, receiver);
-    }
-
-    private async Task SendNotificationsAsync<TMessage>(
-        TMessage message,
-        IReadOnlyCollection<Models.ServiceDescriptor> services,
-        Channel<Func<Task>> channel,
-        CancellationToken cancellationToken)
-        where TMessage : notnull
-    {
         logger.LogTrace("Publishing message {MessageType} to {NotificationCount} notifications",
-            typeof(TMessage).Name, services.Count);
+            typeof(TMessage).Name, handlers.Count);
 
-        try
-        {
-            foreach (var serviceDescriptor in services)
-            {
-                var handler =
-                    (INotificationHandler<TMessage>)serviceProvider.GetRequiredService(serviceDescriptor.MainType);
-                await channel.Writer.WriteAsync(() =>
-                {
-                    logger.LogTrace("Sending message {MessageType} to {HandlerType}",
-                        typeof(TMessage).Name, serviceDescriptor.MainType.Name);
-
-                    return handler.HandleAsync(message, cancellationToken);
-                }, cancellationToken);
-            }
-        }
-        finally
-        {
-            channel.Writer.Complete();
-        }
+        return notifierRegistry.Configurations.DeliveryMode == NotificationDeliveryMode.WaitAll
+            ? PublishAndWaitAsync(message, handlers, cancellationToken)
+            : PublishFireAndForget(message, handlers, cancellationToken);
     }
 
-    private async Task ExecuteHandlersAsync(
-        Channel<Func<Task>> channel,
+    private IReadOnlyList<INotificationHandler<TMessage>> ResolveHandlers<TMessage>()
+        where TMessage : notnull
+        => notifierRegistry.ListNotifiersByMessageType<TMessage>()
+            .Select(d => (INotificationHandler<TMessage>)serviceProvider.GetRequiredService(d.MainType))
+            .ToList();
+
+    private async Task PublishAndWaitAsync<TMessage>(
+        TMessage message,
+        IReadOnlyCollection<INotificationHandler<TMessage>> handlers,
         CancellationToken cancellationToken)
+        where TMessage : notnull
     {
-        while (await channel.Reader.WaitToReadAsync(cancellationToken))
+        var tasks = handlers.Select(handler => HandleAsync(handler, message, cancellationToken));
+        await Task.WhenAll(tasks);
+    }
+
+    private Task PublishFireAndForget<TMessage>(
+        TMessage message,
+        IReadOnlyCollection<INotificationHandler<TMessage>> handlers,
+        CancellationToken cancellationToken)
+        where TMessage : notnull
+    {
+        foreach (var handler in handlers)
         {
-            while (channel.Reader.TryRead(out var handlerTask))
+            _ = Task.Run(async () =>
             {
-                if (notifierRegistry.Configurations.DeliveryMode == NotificationDeliveryMode.FireAndForget)
-                    _ = Task.Run(handlerTask, cancellationToken).ConfigureAwait(false);
-                else
-                    await handlerTask();
-            }
+                try
+                {
+                    await HandleAsync(handler, message, cancellationToken);
+                }
+                catch (Exception exception)
+                {
+                    logger.LogError(exception,
+                        "Error publishing message {MessageType} to {HandlerType}",
+                        typeof(TMessage).Name, handler.GetType().Name);
+                }
+            });
         }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleAsync<TMessage>(
+        INotificationHandler<TMessage> handler,
+        TMessage message,
+        CancellationToken cancellationToken)
+        where TMessage : notnull
+    {
+        logger.LogTrace("Sending message {MessageType} to {HandlerType}",
+            typeof(TMessage).Name, handler.GetType().Name);
+
+        await handler.HandleAsync(message, cancellationToken);
     }
 }

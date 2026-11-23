@@ -25,6 +25,15 @@ public class SampleRequestFilter : IRequestFilter
     }
 }
 
+public class SampleSpecificFilter : IRequestFilter<SampleRequest>
+{
+    public Task<TResponse> FilterAsync<TResponse>(SampleRequest request, Func<Task<TResponse>> next,
+        CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+}
+
 public class GenericHandler : IRequestHandler<string, int>
 {
     public Task<int> HandleAsync(string request, CancellationToken cancellationToken)

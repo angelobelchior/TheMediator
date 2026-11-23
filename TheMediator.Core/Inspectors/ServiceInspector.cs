@@ -1,57 +1,67 @@
-using Void = TheMediator.Core.Models.Void;
-
 namespace TheMediator.Core.Inspectors;
 
 internal static class ServiceInspector
 {
-    private static readonly List<Type> HandlerTypes =
+    private static readonly Type[] HandlerInterfaces =
     [
         typeof(IRequestHandler<,>),
         typeof(IRequestHandler<>)
     ];
 
-    private static readonly List<Type> FilterTypes =
+    private static readonly Type[] FilterInterfaces =
     [
         typeof(IRequestFilter),
         typeof(IRequestFilter<>),
     ];
 
-    private static readonly List<Type> NotificationTypes =
+    private static readonly Type[] NotificationInterfaces =
     [
         typeof(INotificationHandler<>)
     ];
 
-
     public static IEnumerable<Models.ServiceDescriptor> GetServicesByAssembly(Assembly assembly)
     {
-        var types = GetValidTypesFromAssembly(assembly);
-        foreach (var type in types)
+        foreach (var type in GetValidTypesFromAssembly(assembly))
         foreach (var serviceDescriptor in GetServiceDescriptorsForType(type))
             yield return serviceDescriptor;
     }
 
-    public static Models.ServiceDescriptor CreateService(
-        Type mainType,
-        ServiceCategory serviceCategory)
+    public static Models.HandlerDescriptor CreateHandlerDescriptor(Type mainType)
     {
-        var types = serviceCategory switch
-        {
-            ServiceCategory.Filter => FilterTypes,
-            ServiceCategory.Handler => HandlerTypes,
-            ServiceCategory.Notification => NotificationTypes,
-            _ => throw new ArgumentOutOfRangeException(nameof(serviceCategory), serviceCategory, null)
-        };
+        var requestResponseInterface = GetMatchingInterface(mainType, typeof(IRequestHandler<,>));
+        if (requestResponseInterface is not null)
+            return CreateHandlerDescriptor(mainType, requestResponseInterface);
 
-        foreach (var type in types)
-        {
-            var interfaceType = GetMatchingInterface(mainType, type);
-            if (interfaceType is null) continue;
-
-            return CreateServiceFromInterface(mainType, interfaceType, serviceCategory);
-        }
+        var requestInterface = GetMatchingInterface(mainType, typeof(IRequestHandler<>));
+        if (requestInterface is not null)
+            return CreateHandlerDescriptor(mainType, requestInterface);
 
         throw new InvalidOperationException(
-            $"The type {mainType} does not implement a valid handler, notification or filter handler interface.");
+            $"The type {mainType} does not implement a valid handler interface.");
+    }
+
+    public static Models.FilterDescriptor CreateFilterDescriptor(Type mainType)
+    {
+        var requestInterface = GetMatchingInterface(mainType, typeof(IRequestFilter<>));
+        if (requestInterface is not null)
+            return CreateFilterDescriptor(mainType, requestInterface);
+
+        var nonGenericInterface = GetMatchingInterface(mainType, typeof(IRequestFilter));
+        if (nonGenericInterface is not null)
+            return CreateFilterDescriptor(mainType, nonGenericInterface);
+
+        throw new InvalidOperationException(
+            $"The type {mainType} does not implement a valid filter interface.");
+    }
+
+    public static Models.NotificationDescriptor CreateNotificationDescriptor(Type mainType)
+    {
+        var interfaceType = GetMatchingInterface(mainType, typeof(INotificationHandler<>));
+        if (interfaceType is not null)
+            return CreateNotificationDescriptor(mainType, interfaceType);
+
+        throw new InvalidOperationException(
+            $"The type {mainType} does not implement a valid notification interface.");
     }
 
     internal static IEnumerable<Type> GetValidTypesFromAssembly(Assembly assembly)
@@ -60,34 +70,17 @@ internal static class ServiceInspector
 
     internal static IEnumerable<Models.ServiceDescriptor> GetServiceDescriptorsForType(Type type)
     {
-        var interfaces = type.GetInterfaces();
-
-        foreach (var @interface in interfaces)
+        foreach (var @interface in type.GetInterfaces())
         {
             var genericType = @interface.IsGenericType ? @interface.GetGenericTypeDefinition() : @interface;
-            
-            if (HandlerTypes.Contains(genericType))
-                yield return CreateService(type, ServiceCategory.Handler);
-            else if (FilterTypes.Contains(genericType))
-                yield return CreateService(type, ServiceCategory.Filter);
-            else if (NotificationTypes.Contains(genericType))
-                yield return CreateService(type, ServiceCategory.Notification);
+
+            if (HandlerInterfaces.Contains(genericType))
+                yield return CreateHandlerDescriptor(type, @interface);
+            else if (FilterInterfaces.Contains(genericType))
+                yield return CreateFilterDescriptor(type, @interface);
+            else if (NotificationInterfaces.Contains(genericType))
+                yield return CreateNotificationDescriptor(type, @interface);
         }
-    }
-
-    internal static Models.ServiceDescriptor CreateServiceFromInterface(
-        Type mainType,
-        Type interfaceType,
-        ServiceCategory serviceCategory)
-    {
-        var genericArguments = interfaceType.GetGenericArguments();
-
-        return genericArguments.Length switch
-        {
-            0 => new Models.ServiceDescriptor(mainType, Void.Type, Void.Type, serviceCategory),
-            1 => new Models.ServiceDescriptor(mainType, genericArguments[0], Void.Type, serviceCategory),
-            _ => new Models.ServiceDescriptor(mainType, genericArguments[0], genericArguments[1], serviceCategory)
-        };
     }
 
     internal static Type? GetMatchingInterface(Type mainType, Type type)
@@ -98,4 +91,21 @@ internal static class ServiceInspector
                    i.IsGenericType && i.GetGenericTypeDefinition() == type) ??
                allInterfaces.FirstOrDefault(i => i == type);
     }
+
+    private static Models.HandlerDescriptor CreateHandlerDescriptor(Type mainType, Type interfaceType)
+    {
+        var arguments = interfaceType.GetGenericArguments();
+        return arguments.Length == 2
+            ? new Models.HandlerDescriptor(mainType, arguments[0], arguments[1])
+            : new Models.HandlerDescriptor(mainType, arguments[0], null);
+    }
+
+    private static Models.FilterDescriptor CreateFilterDescriptor(Type mainType, Type interfaceType)
+        => interfaceType.IsGenericType
+            ? new Models.FilterDescriptor(mainType, interfaceType.GetGenericArguments()[0])
+            : new Models.FilterDescriptor(mainType, null);
+
+    private static Models.NotificationDescriptor CreateNotificationDescriptor(Type mainType,
+        Type interfaceType)
+        => new(mainType, interfaceType.GetGenericArguments()[0]);
 }
