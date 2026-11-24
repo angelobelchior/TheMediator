@@ -37,6 +37,9 @@ jobs:
 
   publish:
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+    permissions:
+      contents: read
+      id-token: write
     runs-on: ubuntu-latest
 
     steps:
@@ -61,5 +64,11 @@ jobs:
         VERSION="${GITHUB_REF_NAME#v}"
         dotnet pack ./TheMediator.Core/TheMediator.Core.csproj -c Release --no-build -p:Version="$VERSION" --output ./artifacts
 
+    - name: NuGet login (OIDC → temporary API key)
+      uses: NuGet/login@v1
+      id: login
+      with:
+        user: AngeloBelchior
+
     - name: Publish to NuGet
-      run: dotnet nuget push ./artifacts/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ secrets.NUGET_API_KEY }} --skip-duplicate
+      run: dotnet nuget push ./artifacts/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --skip-duplicate
