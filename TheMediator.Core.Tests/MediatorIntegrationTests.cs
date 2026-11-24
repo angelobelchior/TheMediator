@@ -21,6 +21,7 @@ public class MediatorIntegrationTests
         services.AddTheMediator(configuration =>
         {
             configuration.Register();
+            configuration.Filters.Add<IntegrationFilter>();
             configuration.Notifiers.Settings.DeliveryMode = NotificationDeliveryMode.WaitAll;
         });
 

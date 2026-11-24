@@ -6,6 +6,7 @@ using TheMediator.Core.Models;
 using TheMediator.Generated;
 using TheMediator.Playground.Application;
 using TheMediator.Playground.Contracts.Products;
+using TheMediator.Playground.Filters;
 using TheMediator.Playground.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +14,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddTheMediator(configuration =>
 {
     configuration.Register();
+    configuration.Filters.Add<MeasureTimeRequestFilter>();
+    configuration.Filters.Add<LoggerRequestFilter>();
+    configuration.Filters.Add<SpecificFilter, ProductRequest>();
     configuration.Notifiers.Settings.DeliveryMode = NotificationDeliveryMode.FireAndForget;
 });
 

@@ -24,7 +24,7 @@ public sealed class TheMediatorSourceGenerator : IIncrementalGenerator
             .Where(static symbol => symbol is not null);
 
         var combined = context.CompilationProvider.Combine(candidateTypes.Collect());
-        context.RegisterSourceOutput(combined, static (spc, source) => { Execute(spc, source.Right); });
+        context.RegisterSourceOutput(combined, static (spc, source) => Execute(spc, source.Right));
     }
 
     private static void Execute(
@@ -32,7 +32,6 @@ public sealed class TheMediatorSourceGenerator : IIncrementalGenerator
         ImmutableArray<INamedTypeSymbol?> candidateTypes)
     {
         var registrations = new List<Registration>();
-        var filters = new List<Registration>();
 
         foreach (var type in candidateTypes)
         {
@@ -53,21 +52,13 @@ public sealed class TheMediatorSourceGenerator : IIncrementalGenerator
                 else if (IsInterface(iface, "INotificationHandler", 1))
                     registrations.Add(new Registration(type, iface.TypeArguments[0], null,
                         RegistrationKind.Notifier));
-                else if (IsInterface(iface, "IRequestFilter", 1))
-                    filters.Add(new Registration(type, iface.TypeArguments[0], null, RegistrationKind.Filter));
-                else if (IsInterface(iface, "IRequestFilter", 0))
-                    filters.Add(new Registration(type, null, null, RegistrationKind.Filter));
             }
         }
 
-        if (registrations.Count == 0 && filters.Count == 0)
+        if (registrations.Count == 0)
             return;
 
-        filters.Sort(static (x, y) => string.CompareOrdinal(
-            x.ServiceType.ToDisplayString(TypeFormat),
-            y.ServiceType.ToDisplayString(TypeFormat)));
-
-        context.AddSource("TheMediator.Generated.g.cs", BuildSource(registrations, filters));
+        context.AddSource("TheMediator.Generated.g.cs", BuildSource(registrations));
     }
 
     private static bool IsInterface(INamedTypeSymbol namedTypeSymbol, string name, int arity)
@@ -75,16 +66,10 @@ public sealed class TheMediatorSourceGenerator : IIncrementalGenerator
            && namedTypeSymbol.OriginalDefinition.Arity == arity
            && namedTypeSymbol.OriginalDefinition.ContainingNamespace?.ToDisplayString() == CoreNamespace;
 
-    private static string BuildSource(
-        List<Registration> registrations,
-        List<Registration> filters)
+    private static string BuildSource(List<Registration> registrations)
     {
         var sb = new StringBuilder();
         foreach (var registration in registrations)
-            sb.AppendLine(BuildRegistrationLine(registration));
-        sb.AppendLine();
-
-        foreach (var registration in filters)
             sb.AppendLine(BuildRegistrationLine(registration));
         sb.AppendLine();
 
@@ -115,9 +100,6 @@ public sealed class TheMediatorSourceGenerator : IIncrementalGenerator
         {
             RegistrationKind.Notifier =>
                   $"            configuration.Notifiers.Add<{serviceType}, {registration.FirstType!.ToDisplayString(TypeFormat)}>();",
-            RegistrationKind.Filter => registration.FirstType is null
-                ? $"            configuration.Filters.Add<{serviceType}>();"
-                : $"            configuration.Filters.Add<{serviceType}, {registration.FirstType.ToDisplayString(TypeFormat)}>();",
             _ => registration.SecondType is not null
                 ? $"            configuration.Handlers.Add<{serviceType}, {registration.FirstType!.ToDisplayString(TypeFormat)}, {registration.SecondType.ToDisplayString(TypeFormat)}>();"
                 : $"            configuration.Handlers.Add<{serviceType}, {registration.FirstType!.ToDisplayString(TypeFormat)}>();"
@@ -127,8 +109,7 @@ public sealed class TheMediatorSourceGenerator : IIncrementalGenerator
     private enum RegistrationKind
     {
         Handler,
-        Notifier,
-        Filter
+        Notifier
     }
 
     private sealed record Registration(

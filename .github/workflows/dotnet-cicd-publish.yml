@@ -37,7 +37,6 @@ jobs:
 
   publish:
     if: ${{ startsWith(github.ref, 'refs/tags/v') }}
-    environment: PROD
     runs-on: ubuntu-latest
 
     steps:
