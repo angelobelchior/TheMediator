@@ -16,9 +16,9 @@ public class NotifierExecutorTests
         var services = new ServiceCollection();
         services.AddSingleton(log);
         var registry = new NotifierRegistry();
-        registry.Add<RecordingNotificationHandler>();
+        registry.Add<RecordingNotificationHandler, SampleMessage>();
         services.AddScoped<RecordingNotificationHandler>();
-        registry.Configurations.DeliveryMode = NotificationDeliveryMode.WaitAll;
+        registry.Settings.DeliveryMode = NotificationDeliveryMode.WaitAll;
         var serviceProvider = services.BuildServiceProvider();
 
         var executor = new NotifierExecutor(NullLoggerFactory.Instance, serviceProvider, registry);
@@ -38,9 +38,9 @@ public class NotifierExecutorTests
         var services = new ServiceCollection();
         services.AddSingleton(state);
         var registry = new NotifierRegistry();
-        registry.Add<BlockingNotificationHandler>();
+        registry.Add<BlockingNotificationHandler, SampleMessage>();
         services.AddScoped<BlockingNotificationHandler>();
-        registry.Configurations.DeliveryMode = NotificationDeliveryMode.FireAndForget;
+        registry.Settings.DeliveryMode = NotificationDeliveryMode.FireAndForget;
         var serviceProvider = services.BuildServiceProvider();
 
         var executor = new NotifierExecutor(NullLoggerFactory.Instance, serviceProvider, registry);

@@ -1,19 +1,27 @@
-using TheMediator.Core.Inspectors;
-
 namespace TheMediator.Core.Registries;
 
-public class HandlerRegistry : ServiceRegistry<Models.HandlerDescriptor>
+public class HandlerRegistry : ServiceRegistry<HandlerDescriptor>
 {
-    public HandlerRegistry()
-        : base(ServiceInspector.CreateHandlerDescriptor)
-    {
-    }
+    public void Add<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler,
+        TRequest,
+        TResponse>()
+        where THandler : IRequestHandler<TRequest, TResponse>
+        where TRequest : notnull
+        => Add(new HandlerDescriptor(typeof(THandler), typeof(TRequest), typeof(TResponse)));
 
-    private readonly HashSet<Models.HandlerDescriptor> _handlers = new();
+    public void Add<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler,
+        TRequest>()
+        where THandler : IRequestHandler<TRequest>
+        where TRequest : notnull
+        => Add(new HandlerDescriptor(typeof(THandler), typeof(TRequest), null));
 
-    protected override IEnumerable<Models.HandlerDescriptor> Entries => _handlers;
+    private readonly HashSet<HandlerDescriptor> _handlers = new();
 
-    protected override void EnsureUnique(Models.HandlerDescriptor descriptor)
+    protected override IEnumerable<HandlerDescriptor> Entries => _handlers;
+
+    protected override void EnsureUnique(HandlerDescriptor descriptor)
     {
         var current = _handlers.FirstOrDefault(s => s.RequestType == descriptor.RequestType &&
                                                     s.ResponseType == descriptor.ResponseType);
@@ -23,9 +31,9 @@ public class HandlerRegistry : ServiceRegistry<Models.HandlerDescriptor>
                 $"The handler {current.MainType} is already registered with the same request {descriptor.RequestType} and response {descriptor.ResponseType} types.");
     }
 
-    protected override void Insert(Models.HandlerDescriptor descriptor) => _handlers.Add(descriptor);
+    protected override void Insert(HandlerDescriptor descriptor) => _handlers.Add(descriptor);
 
-    internal Models.HandlerDescriptor GetHandler<TRequest, TResponse>()
+    internal HandlerDescriptor GetHandler<TRequest, TResponse>()
     {
         var type = _handlers.FirstOrDefault(s => s.RequestType == typeof(TRequest) &&
                                                  s.ResponseType == typeof(TResponse));
@@ -36,7 +44,7 @@ public class HandlerRegistry : ServiceRegistry<Models.HandlerDescriptor>
         return type;
     }
 
-    internal Models.HandlerDescriptor GetHandler<TRequest>()
+    internal HandlerDescriptor GetHandler<TRequest>()
     {
         var type = _handlers.FirstOrDefault(s => s.RequestType == typeof(TRequest) &&
                                                  s.ResponseType is null);

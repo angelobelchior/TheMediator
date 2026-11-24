@@ -19,7 +19,7 @@ internal class NotifierExecutor(
         logger.LogTrace("Publishing message {MessageType} to {NotificationCount} notifications",
             typeof(TMessage).Name, handlers.Count);
 
-        return notifierRegistry.Configurations.DeliveryMode == NotificationDeliveryMode.WaitAll
+        return notifierRegistry.Settings.DeliveryMode == NotificationDeliveryMode.WaitAll
             ? PublishAndWaitAsync(message, handlers, cancellationToken)
             : PublishFireAndForget(message, handlers, cancellationToken);
     }

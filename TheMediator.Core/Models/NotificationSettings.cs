@@ -5,11 +5,11 @@ namespace TheMediator.Core.Models;
 /// </summary>
 /// <param name="deliveryMode"></param>
 [ExcludeFromCodeCoverage]
-public class NotificationConfiguration(NotificationDeliveryMode deliveryMode)
+public class NotificationSettings(NotificationDeliveryMode deliveryMode)
 {
     public NotificationDeliveryMode DeliveryMode { get; set; } = deliveryMode;
 
-    public static readonly NotificationConfiguration None = new(NotificationDeliveryMode.FireAndForget);
+    public static readonly NotificationSettings None = new(NotificationDeliveryMode.FireAndForget);
 }
 
 /// <summary>

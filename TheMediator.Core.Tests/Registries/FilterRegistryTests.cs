@@ -56,7 +56,7 @@ public class FilterRegistryTests
         var registry = new FilterRegistry();
 
         registry.Add<SampleRequestFilter>();
-        registry.Add<SampleSpecificFilter>();
+        registry.Add<SampleSpecificFilter, SampleRequest>();
 
         // Act
         var matchingFilters = registry.ListFiltersWithRequest<SampleRequest>().ToList();

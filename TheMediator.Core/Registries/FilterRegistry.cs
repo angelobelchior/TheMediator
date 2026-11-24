@@ -1,20 +1,24 @@
-using TheMediator.Core.Inspectors;
-
 namespace TheMediator.Core.Registries;
 
-public class FilterRegistry : ServiceRegistry<Models.FilterDescriptor>
+public class FilterRegistry : ServiceRegistry<FilterDescriptor>
 {
-    public FilterRegistry()
-        : base(ServiceInspector.CreateFilterDescriptor)
-    {
-    }
+    public void Add<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TFilter,
+        TRequest>()
+        where TFilter : IRequestFilter<TRequest>
+        where TRequest : notnull
+        => Add(new FilterDescriptor(typeof(TFilter), typeof(TRequest)));
 
-    private readonly Stack<Models.FilterDescriptor> _filters = new();
+    public void Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TFilter>()
+        where TFilter : IRequestFilter
+        => Add(new FilterDescriptor(typeof(TFilter), null));
 
-    protected override IEnumerable<Models.FilterDescriptor> Entries => _filters;
+    private readonly Stack<FilterDescriptor> _filters = new();
 
-    protected override void Insert(Models.FilterDescriptor descriptor) => _filters.Push(descriptor);
+    protected override IEnumerable<FilterDescriptor> Entries => _filters;
 
-    internal IEnumerable<Models.FilterDescriptor> ListFiltersWithRequest<TRequest>()
+    protected override void Insert(FilterDescriptor descriptor) => _filters.Push(descriptor);
+
+    internal IEnumerable<FilterDescriptor> ListFiltersWithRequest<TRequest>()
         => _filters.Where(f => f.RequestType is null || f.RequestType == typeof(TRequest));
 }

@@ -1,16 +1,18 @@
 namespace TheMediator.Core.Registries;
 
-public abstract class ServiceRegistry<TDescriptor>(Func<Type, TDescriptor> descriptorFactory)
+public abstract class ServiceRegistry<TDescriptor>
     where TDescriptor : Models.ServiceDescriptor
 {
-    public void Add<TService>()
-        where TService : notnull
-        => Add(descriptorFactory(typeof(TService)));
-
     internal void Add(TDescriptor descriptor)
     {
         EnsureUnique(descriptor);
         Insert(descriptor);
+    }
+
+    internal void RegisterServices(IServiceCollection services)
+    {
+        foreach (var entry in Entries)
+            services.AddScoped(entry.MainType);
     }
 
     internal IEnumerable<Type> ServiceTypes => Entries.Select(entry => entry.MainType);

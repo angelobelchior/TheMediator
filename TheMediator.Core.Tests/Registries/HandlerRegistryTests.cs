@@ -17,7 +17,7 @@ public class HandlerRegistryTests
             typeof(SampleResponse));
 
         // Act
-        registry.Add<RequestResponseRequestHandler>();
+        registry.Add<RequestResponseRequestHandler, SampleRequest, SampleResponse>();
 
         // Assert
         var handler = registry.GetHandler<SampleRequest, SampleResponse>();
@@ -36,7 +36,7 @@ public class HandlerRegistryTests
             null);
 
         // Act
-        registry.Add<RequestRequestHandler>();
+        registry.Add<RequestRequestHandler, SampleRequest>();
 
         // Assert
         var handler = registry.GetHandler<SampleRequest>();
@@ -83,7 +83,7 @@ public class HandlerRegistryTests
         var registry = new HandlerRegistry();
 
         // Act
-        registry.Add<RequestResponseRequestHandler>();
+        registry.Add<RequestResponseRequestHandler, SampleRequest, SampleResponse>();
 
         // Assert
         Assert.Contains(typeof(RequestResponseRequestHandler), registry.ServiceTypes);

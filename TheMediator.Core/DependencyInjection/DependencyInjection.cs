@@ -1,5 +1,4 @@
 using TheMediator.Core.Executors;
-using TheMediator.Core.Inspectors;
 using TheMediator.Core.Registries;
 
 namespace TheMediator.Core.DependencyInjection;
@@ -23,10 +22,9 @@ public static class DependencyInjection
         var configuration = new Configuration();
         configurator(configuration);
 
-        foreach (var serviceType in configuration.Handlers.ServiceTypes
-                     .Concat(configuration.Filters.ServiceTypes)
-                     .Concat(configuration.Notifiers.ServiceTypes))
-            services.AddScoped(serviceType);
+        configuration.Handlers.RegisterServices(services);
+        configuration.Filters.RegisterServices(services);
+        configuration.Notifiers.RegisterServices(services);
 
         services.AddSingleton(configuration.Handlers);
         services.AddSingleton(configuration.Filters);
@@ -61,36 +59,5 @@ public static class DependencyInjection
         /// Notifier registry for TheMediator.
         /// </summary>
         public NotifierRegistry Notifiers { get; } = new();
-
-        /// <summary>
-        /// Adds services from the specified assemblies to TheMediator.
-        /// </summary>
-        /// <param name="assemblies">Assemblies</param>
-        /// <returns>Configuration</returns>
-        /// <exception cref="ArgumentNullException">When assemblies is null or empty</exception>
-        public Configuration AddServicesFromAssemblies(params Assembly[] assemblies)
-        {
-            if (assemblies is null || assemblies.Length == 0)
-                throw new ArgumentNullException(nameof(assemblies), "Assemblies cannot be null or empty.");
-
-            assemblies
-                .Select(ServiceInspector.GetServicesByAssembly)
-                .SelectMany(serviceType => serviceType)
-                .ToList()
-                .ForEach(serviceDescriptor =>
-                {
-                    switch (serviceDescriptor)
-                    {
-                        case HandlerDescriptor handler:
-                            Handlers.Add(handler);
-                            break;
-                        case NotificationDescriptor notification:
-                            Notifiers.Add(notification);
-                            break;
-                    }
-                });
-
-            return this;
-        }
     }
 }

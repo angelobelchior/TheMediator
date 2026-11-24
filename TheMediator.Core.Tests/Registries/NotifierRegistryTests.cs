@@ -12,7 +12,7 @@ public class NotifierRegistryTests
         var registry = new NotifierRegistry();
 
         // Act
-        registry.Add<SampleNotification>();
+        registry.Add<SampleNotification, SampleMessage>();
 
         // Assert
         Assert.Contains(typeof(SampleNotification), registry.ServiceTypes);
@@ -69,7 +69,7 @@ public class NotifierRegistryTests
     {
         // Arrange
         var registry = new NotifierRegistry();
-        registry.Add<SampleNotification>();
+        registry.Add<SampleNotification, SampleMessage>();
 
         // Act
         var notifiers = registry.ListNotifiersByMessageType<SampleMessage>();
