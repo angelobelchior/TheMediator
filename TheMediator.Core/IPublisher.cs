@@ -1,5 +1,3 @@
-using TheMediator.Core.Executors;
-
 namespace TheMediator.Core;
 
 /// <summary>
@@ -16,11 +14,4 @@ public interface IPublisher
     /// <returns></returns>
     Task PublishAsync<TMessage>(TMessage message, CancellationToken cancellationToken)
         where TMessage : notnull;
-}
-
-internal class Publisher(NotifierExecutor notifierExecutor) : IPublisher
-{
-    public Task PublishAsync<TMessage>(TMessage message, CancellationToken cancellationToken)
-        where TMessage : notnull
-        => notifierExecutor.PublishAsync(message, cancellationToken);
 }

@@ -6,7 +6,7 @@ internal partial class HandlerExecutor(
     ILoggerFactory loggerFactory,
     IServiceProvider serviceProvider,
     HandlerRegistry handlerRegistry,
-    FilterExecutor filterExecutor)
+    FilterExecutor filterExecutor) : ISender
 {
     private readonly ILogger logger = loggerFactory.CreateLogger(Constants.LogCategoryName);
 

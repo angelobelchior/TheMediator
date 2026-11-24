@@ -5,7 +5,7 @@ namespace TheMediator.Core.Executors;
 internal partial class NotifierExecutor(
     ILoggerFactory loggerFactory,
     IServiceProvider serviceProvider,
-    NotifierRegistry notifierRegistry)
+    NotifierRegistry notifierRegistry) : IPublisher
 {
     private readonly ILogger logger = loggerFactory.CreateLogger(Constants.LogCategoryName);
 
@@ -38,45 +38,53 @@ internal partial class NotifierExecutor(
 
         var handlers = new INotificationHandler<TMessage>[descriptors.Count];
         for (var i = 0; i < descriptors.Count; i++)
-            handlers[i] = (INotificationHandler<TMessage>)serviceProvider.GetRequiredService(descriptors[i].MainType);
+            handlers[i] =
+                (INotificationHandler<TMessage>)serviceProvider.GetRequiredService(descriptors[i].MainType);
 
         return handlers;
     }
 
-    private async Task PublishAndWaitAsync<TMessage>(
+    private Task PublishAndWaitAsync<TMessage>(
         TMessage message,
-        IReadOnlyCollection<INotificationHandler<TMessage>> handlers,
+        IReadOnlyList<INotificationHandler<TMessage>> handlers,
         CancellationToken cancellationToken)
         where TMessage : notnull
     {
-        var tasks = handlers.Select(handler => HandleAsync(handler, message, cancellationToken));
-        await Task.WhenAll(tasks);
+        var tasks = new Task[handlers.Count];
+        for (var i = 0; i < handlers.Count; i++)
+            tasks[i] = HandleAsync(handlers[i], message, cancellationToken);
+
+        return Task.WhenAll(tasks);
     }
 
     private Task PublishFireAndForget<TMessage>(
         TMessage message,
-        IReadOnlyCollection<INotificationHandler<TMessage>> handlers,
+        IReadOnlyList<INotificationHandler<TMessage>> handlers,
         CancellationToken cancellationToken)
         where TMessage : notnull
     {
         foreach (var handler in handlers)
-        {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await HandleAsync(handler, message, cancellationToken);
-                }
-                catch (Exception exception)
-                {
-                    logger.LogError(exception,
-                        "Error publishing message {MessageType} to {HandlerType}",
-                        typeof(TMessage).Name, handler.GetType().Name);
-                }
-            });
-        }
+            _ = HandleAsyncSafely(handler, message, cancellationToken);
 
         return Task.CompletedTask;
+    }
+
+    private async Task HandleAsyncSafely<TMessage>(
+        INotificationHandler<TMessage> handler,
+        TMessage message,
+        CancellationToken cancellationToken)
+        where TMessage : notnull
+    {
+        try
+        {
+            await HandleAsync(handler, message, cancellationToken);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception,
+                "Error publishing message {MessageType} to {HandlerType}",
+                typeof(TMessage).Name, handler.GetType().Name);
+        }
     }
 
     private async Task HandleAsync<TMessage>(

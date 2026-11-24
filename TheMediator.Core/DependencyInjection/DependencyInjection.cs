@@ -31,11 +31,8 @@ public static class DependencyInjection
         services.AddSingleton(configuration.Notifiers);
 
         services.AddScoped<FilterExecutor>();
-        services.AddScoped<NotifierExecutor>();
-        services.AddScoped<HandlerExecutor>();
-
-        services.AddScoped<ISender, Sender>();
-        services.AddScoped<IPublisher, Publisher>();
+        services.AddScoped<ISender, HandlerExecutor>();
+        services.AddScoped<IPublisher, NotifierExecutor>();
 
         return services;
     }
