@@ -28,15 +28,24 @@ dotnet add package TheMediator
 Feito isso, você pode registrar o Mediator no seu projeto:
 
 ```csharp
+using TheMediator.Generated;
+
 builder.Services.AddTheMediator(configuration =>
 {
-    configuration.AddServicesFromAssemblies(typeof(Program).Assembly);
-    
-    configuration.Filters.Add<LoggingFilter>();
-    
-    configuration.Notifiers.Configurations.DeliveryMode = NotificationDeliveryMode.FireAndForget;
-}); 
+    configuration.Register();
+    configuration.Notifiers.Settings.DeliveryMode = NotificationDeliveryMode.FireAndForget;
+});
 ```
+
+`Register()` é o método de extensão gerado pelo source generator (namespace `TheMediator.Generated`).
+
+## AOT e Source Generator
+
+A partir da versão 2.0, o **TheMediator** é compatível com **Native AOT** e **trimming** (target `net9.0`, `IsAotCompatible` + `IsTrimmable`).
+
+O registro dos `Handlers`, `Notifications` e `Filters` é feito automagicamente por um **source generator**: ele detecta os tipos que implementam `IRequestHandler`/`INotificationHandler`/`IRequestFilter` e emite, em tempo de compilação, a classe estática `TheMediator.Generated.TheMediatorDI` com o método de extensão `Register()`. Esse caminho é 100% livre de reflection — necessário para AOT.
+
+O método antigo `AddServicesFromAssemblies` foi removido na versão 2.0 — ele usava reflection (`Assembly.GetTypes`) e era incompatível com AOT/trimming. O registro é feito exclusivamente pelo source generator ou pelo registro tipado (`Handlers.Add<THandler, TRequest, TResponse>()`, `Notifiers.Add<TNotifier, TMessage>()`, `Filters.Add<TFilter>()`, etc.).
 
 # Funcionalidades
 
@@ -49,7 +58,7 @@ Eles implementam a interface `IRequestHandler<TRequest, TResponse>`, onde `TRequ
 
 É possível ter mais de um `Handler` para o mesmo tipo de requisição (`TRequest`) contanto que o `TResponse` seja diferente.
 
-Os `Handlers` são registrados automaticamente pelo método `AddServicesFromAssemblies` no `AddTheMediator`.
+Os `Handlers` são registrados automaticamente pelo source generator (`configuration.Register()`).
 
 Exemplo de uso:
 
@@ -117,16 +126,16 @@ public class LoggerRequestFilter(ILogger<LoggerRequestFilter> logger)
     }
 }
 ```
-Os `Filters` devem ser registrados manualmente no `AddTheMediator` e a ordem de execução é a ordem em que foram registrados.
+Os `Filters` são registrados automaticamente pelo source generator (`configuration.Register()`). A ordem de execução segue a ordem alfabética do nome do tipo.
 
 
 ## Notifications
 
-As `Notifications` permitem enviar mensagens para múltiplos `handlers` de forma assíncrona (quando o delivery mode é `FireAndForget`) ou síncrona (quando o delivery mode é `WaitForAll`).
+As `Notifications` permitem enviar mensagens para múltiplos `handlers` de forma assíncrona (quando o delivery mode é `FireAndForget`) ou síncrona (quando o delivery mode é `WaitAll`).
 
 O DeliveryMode padrão é `FireAndForget`, e ele pode ser configurado no `AddTheMediator`.
 
-As `Notifications` são registrados automaticamente pelo método `AddServicesFromAssemblies` no `AddTheMediator`.
+As `Notifications` são registradas automaticamente pelo source generator (`configuration.Register()`).
 
 Exemplo de uso:
 
@@ -182,3 +191,15 @@ Para mudar essa configuração é necessário mudar o level do logger no `appset
   }
 }
 ```
+
+## Benchmarks
+
+O projeto `TheMediator.Benchmarks` usa [BenchmarkDotNet](https://benchmarkdotnet.org/) para medir throughput e alocações do Mediator.
+
+Para executar:
+
+```bash
+dotnet run --project TheMediator.Benchmarks -c Release -- --filter '*'
+```
+
+Os cenários medidos são: chamada direta ao handler (baseline), `Send`, `SendWithFilter` e `Publish`.

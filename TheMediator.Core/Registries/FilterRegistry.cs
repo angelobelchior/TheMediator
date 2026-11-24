@@ -1,37 +1,40 @@
-using TheMediator.Core.Inspectors;
-
 namespace TheMediator.Core.Registries;
 
-/// <summary>
-/// Filter registry.
-/// </summary>
-/// <param name="services">Service Collection</param>
-public class FilterRegistry(IServiceCollection services)
+public class FilterRegistry : ServiceRegistry<FilterDescriptor>
 {
-    private readonly Stack<Models.ServiceDescriptor> _filters = new();
+    public void Add<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TFilter,
+        TRequest>()
+        where TFilter : IRequestFilter<TRequest>
+        where TRequest : notnull
+        => Add(new FilterDescriptor(typeof(TFilter), typeof(TRequest)));
 
-    /// <summary>
-    /// Add a filter to the registry.
-    /// </summary>
-    /// <typeparam name="TFilter">Filter Type</typeparam>
-    public void Add<TFilter>()
+    public void Add<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TFilter>()
+        where TFilter : IRequestFilter
+        => Add(new FilterDescriptor(typeof(TFilter), null));
+
+    private readonly Stack<FilterDescriptor> _filters = new();
+
+    protected override IEnumerable<FilterDescriptor> Entries => _filters;
+
+    protected override void Insert(FilterDescriptor descriptor) => _filters.Push(descriptor);
+
+    internal IReadOnlyList<FilterDescriptor> ListFiltersWithRequest<TRequest>()
     {
-        var mainType = typeof(TFilter);
-        var service = ServiceInspector.CreateService(mainType, ServiceCategory.Filter);
-        Add(service);
+        var type = typeof(TRequest);
+        List<FilterDescriptor>? result = null;
+
+        foreach (var filter in _filters)
+        {
+            if (filter.RequestType is null || filter.RequestType == type)
+            {
+                result ??= new List<FilterDescriptor>();
+                result.Add(filter);
+            }
+        }
+
+        return result is null
+            ? Array.Empty<FilterDescriptor>()
+            : result;
     }
-
-    internal void Add(Models.ServiceDescriptor serviceDescriptor)
-    {
-        if (serviceDescriptor.Category != ServiceCategory.Filter)
-            throw new InvalidOperationException($"{serviceDescriptor.MainType} is not a filter type!");
-
-        _filters.Push(serviceDescriptor);
-        services.AddScoped(serviceDescriptor.MainType);
-    }
-
-    internal IEnumerable<Models.ServiceDescriptor> ListFiltersWithRequest<TRequest>()
-        => _filters.Where(f => (f.RequestType == typeof(TRequest) &&
-                                f.ResponseType == Models.Void.Type) || (f.RequestType == Models.Void.Type &&
-                                                                        f.ResponseType == Models.Void.Type));
 }

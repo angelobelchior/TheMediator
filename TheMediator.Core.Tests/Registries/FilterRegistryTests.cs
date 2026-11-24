@@ -1,11 +1,7 @@
 using TheMediator.Core.Models;
-using Void = TheMediator.Core.Models.Void;
+using TheMediator.Core.Registries;
 
 namespace TheMediator.Core.Tests.Registries;
-
-using Microsoft.Extensions.DependencyInjection;
-using TheMediator.Core.Registries;
-using Xunit;
 
 public class FilterRegistryTests
 {
@@ -13,14 +9,13 @@ public class FilterRegistryTests
     public void AddGeneric_ShouldAddFilterToStack()
     {
         // Arrange
-        var services = new ServiceCollection();
-        var registry = new FilterRegistry(services);
+        var registry = new FilterRegistry();
 
         // Act
         registry.Add<SampleRequestFilter>();
 
         // Assert
-        var filters = registry.ListFiltersWithRequest<Void>().ToList();
+        var filters = registry.ListFiltersWithRequest<SampleRequest>().ToList();
         Assert.Single(filters);
         Assert.Contains(filters, f => f.MainType == typeof(SampleRequestFilter));
     }
@@ -29,53 +24,47 @@ public class FilterRegistryTests
     public void AddService_ShouldAddFilterToStack()
     {
         // Arrange
-        var services = new ServiceCollection();
-        var registry = new FilterRegistry(services);
-        var filterDescriptor = new Models.ServiceDescriptor(
-            typeof(SampleRequestFilter),
-            typeof(Void),
-            typeof(Void),
-            ServiceCategory.Filter);
+        var registry = new FilterRegistry();
+        var filterDescriptor = new FilterDescriptor(typeof(SampleRequestFilter), null);
 
         // Act
         registry.Add(filterDescriptor);
 
         // Assert
-        var filters = registry.ListFiltersWithRequest<Void>().ToList();
+        var filters = registry.ListFiltersWithRequest<SampleRequest>().ToList();
         Assert.Single(filters);
         Assert.Contains(filters, f => f.MainType == typeof(SampleRequestFilter));
     }
 
     [Fact]
-    public void Add_ShouldRegisterFilterInServiceCollection()
+    public void Add_ShouldExposeFilterType()
     {
         // Arrange
-        var services = new ServiceCollection();
-        var registry = new FilterRegistry(services);
+        var registry = new FilterRegistry();
 
         // Act
         registry.Add<SampleRequestFilter>();
 
         // Assert
-        var serviceProvider = services.BuildServiceProvider();
-        var filter = serviceProvider.GetService(typeof(SampleRequestFilter));
-        Assert.NotNull(filter);
+        Assert.Contains(typeof(SampleRequestFilter), registry.ServiceTypes);
     }
 
     [Fact]
-    public void Add_ShouldThrowException_WhenServiceDescriptorIsNotFilter()
+    public void ListFiltersWithRequest_ShouldReturnOnlyGenericAndMatchingFilters()
     {
         // Arrange
-        var services = new ServiceCollection();
-        var registry = new FilterRegistry(services);
-        var invalidDescriptor = new Models.ServiceDescriptor(
-            typeof(SampleRequestFilter),
-            typeof(Void),
-            typeof(Void),
-            ServiceCategory.Notification);
+        var registry = new FilterRegistry();
 
-        // Act & Assert
-        var exception = Assert.Throws<InvalidOperationException>(() => registry.Add(invalidDescriptor));
-        Assert.Equal($"{invalidDescriptor.MainType} is not a filter type!", exception.Message);
+        registry.Add<SampleRequestFilter>();
+        registry.Add<SampleSpecificFilter, SampleRequest>();
+
+        // Act
+        var matchingFilters = registry.ListFiltersWithRequest<SampleRequest>().ToList();
+        var unrelatedFilters = registry.ListFiltersWithRequest<SampleMessage>().ToList();
+
+        // Assert
+        Assert.Equal(2, matchingFilters.Count);
+        Assert.Single(unrelatedFilters);
+        Assert.Contains(unrelatedFilters, f => f.MainType == typeof(SampleRequestFilter));
     }
 }

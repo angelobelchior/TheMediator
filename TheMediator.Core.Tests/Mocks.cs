@@ -7,7 +7,7 @@ public class RequestResponseRequestHandler : IRequestHandler<SampleRequest, Samp
         throw new NotImplementedException();
     }
 }
-    
+
 public class RequestRequestHandler : IRequestHandler<SampleRequest>
 {
     public Task HandleAsync(SampleRequest request, CancellationToken cancellationToken)
@@ -20,25 +20,14 @@ public class SampleRequestFilter : IRequestFilter
 {
     public Task<TResponse> FilterAsync<TRequest, TResponse>(TRequest request, Func<Task<TResponse>> next,
         CancellationToken cancellationToken) where TRequest : notnull
-    {
-        throw new NotImplementedException();
-    }
+        => next();
 }
 
-public class GenericHandler : IRequestHandler<string, int>
+public class SampleSpecificFilter : IRequestFilter<SampleRequest>
 {
-    public Task<int> HandleAsync(string request, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
-    }
-}
-
-public class NonGenericHandler : IRequestFilter
-{
-    public Task<TResponse> FilterAsync<TRequest, TResponse>(TRequest request, Func<Task<TResponse>> next, CancellationToken cancellationToken) where TRequest : notnull
-    {
-        throw new NotImplementedException();
-    }
+    public Task<TResponse> FilterAsync<TResponse>(SampleRequest request, Func<Task<TResponse>> next,
+        CancellationToken cancellationToken)
+        => next();
 }
 
 public class SampleNotification : INotificationHandler<SampleMessage>
@@ -48,10 +37,6 @@ public class SampleNotification : INotificationHandler<SampleMessage>
         throw new NotImplementedException();
     }
 }
-
-public class UnrelatedClass;
-
-public class InvalidType;
 
 public class SampleMessage;
 public class SampleRequest;

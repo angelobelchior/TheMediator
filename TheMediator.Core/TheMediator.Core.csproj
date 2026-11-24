@@ -1,17 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netstandard2.1</TargetFramework>
-        <LangVersion>latest</LangVersion>
+        <TargetFrameworks>netstandard2.0;netstandard2.1;net9.0</TargetFrameworks>
+        <LangVersion>latestmajor</LangVersion>
 
         <Nullable>enable</Nullable>
         <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <EnableNETAnalyzers>true</EnableNETAnalyzers>
         <WarningsAsErrors>CA2000</WarningsAsErrors>
         <NoWarn>1701;1702;NU5100;NU5104</NoWarn>
-        <LangVersion>latestmajor</LangVersion>
 
-        <Version>1.0.3</Version>
+        <Version>2.0.0</Version>
         <Authors>Angelo Belchior</Authors>
         <Title>A Free and Open-Source Mediator Pattern Implementation for .NET</Title>
         <Description>
@@ -24,21 +23,51 @@
         <PackageProjectUrl>https://github.com/angelobelchior/TheMediator</PackageProjectUrl>
         <PackageTags>csharp dotnet .net mediator mediatr</PackageTags>
         <IsPackable>true</IsPackable>
-        <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+        <AssemblyName>TheMediator.Core.SourceGenerator</AssemblyName>
+        <IsRoslynComponent>true</IsRoslynComponent>
+        <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+        <EnableNETAnalyzers>false</EnableNETAnalyzers>
+        <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(TargetFramework)' == 'net9.0'">
+        <IsTrimmable>true</IsTrimmable>
+        <IsAotCompatible>true</IsAotCompatible>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+        <Compile Remove="SourceGenerator\**\*.cs" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+        <Compile Remove="**\*.cs" />
+        <Compile Include="SourceGenerator\**\*.cs" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.9" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.9" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" PrivateAssets="all" />
+    </ItemGroup>
 
     <ItemGroup>
         <None Include="icon.png" Pack="true" PackagePath="\" />
         <None Include="..\README.md" Pack="true" PackagePath="\" />
+        <None Include="bin\$(Configuration)\netstandard2.0\TheMediator.Core.SourceGenerator.dll"
+              Pack="true"
+              PackagePath="analyzers/dotnet/cs"
+              Visible="false" />
         <None Update="icon.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.9" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.9" />
-      <PackageReference Include="System.Threading.Channels" Version="9.0.9" />
     </ItemGroup>
 
 </Project>

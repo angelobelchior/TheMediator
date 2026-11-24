@@ -1,53 +1,46 @@
-using TheMediator.Core.Inspectors;
-using ServiceDescriptor = TheMediator.Core.Models.ServiceDescriptor;
-
 namespace TheMediator.Core.Registries;
 
-/// <summary>
-/// Handler registry.
-/// </summary>
-/// <param name="services">Service Collection</param>
-public class HandlerRegistry(IServiceCollection services)
+public class HandlerRegistry : ServiceRegistry<HandlerDescriptor>
 {
-    private readonly HashSet<ServiceDescriptor> _handlers = new();
+    public void Add<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler,
+        TRequest,
+        TResponse>()
+        where THandler : IRequestHandler<TRequest, TResponse>
+        where TRequest : notnull
+        => Add(new HandlerDescriptor(typeof(THandler), typeof(TRequest), typeof(TResponse)));
 
-    /// <summary>
-    /// Adds a handler to the registry.
-    /// </summary>
-    /// <typeparam name="TService">Service Type</typeparam>
-    public void Add<TService>()
-        where TService : notnull
+    public void Add<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] THandler,
+        TRequest>()
+        where THandler : IRequestHandler<TRequest>
+        where TRequest : notnull
+        => Add(new HandlerDescriptor(typeof(THandler), typeof(TRequest), null));
+
+    private readonly Dictionary<(Type RequestType, Type? ResponseType), HandlerDescriptor> _handlers = new();
+
+    protected override IEnumerable<HandlerDescriptor> Entries => _handlers.Values;
+
+    protected override void EnsureUnique(HandlerDescriptor descriptor)
     {
-        var mainType = typeof(TService);
-        var service = ServiceInspector.CreateService(mainType, ServiceCategory.Handler);
-        Add(service);
-    }
-
-    internal void Add(ServiceDescriptor serviceDescriptor)
-    {
-        if (serviceDescriptor.Category != ServiceCategory.Handler)
-            throw new InvalidOperationException($"{serviceDescriptor.MainType} is not a handler type!");
-
-        var current = _handlers.FirstOrDefault(s => s.RequestType == serviceDescriptor.RequestType &&
-                                                    s.ResponseType == serviceDescriptor.ResponseType &&
-                                                    s.Category == serviceDescriptor.Category);
-        if (current is not null)
+        if (_handlers.ContainsKey((descriptor.RequestType, descriptor.ResponseType)))
             throw new InvalidOperationException(
-                $"Cannot register {serviceDescriptor.MainType}!.\n" +
-                $"The handler {current.MainType} is already registered with the same request {serviceDescriptor.RequestType} and response {serviceDescriptor.ResponseType} types.");
-
-        _handlers.Add(serviceDescriptor);
-        services.AddScoped(serviceDescriptor.MainType);
+                $"Cannot register {descriptor.MainType}!.\n" +
+                $"The handler for request {descriptor.RequestType} and response {descriptor.ResponseType} types is already registered.");
     }
 
-    internal ServiceDescriptor GetHandler<TRequest, TResponse>()
-    {
-        var type = _handlers.FirstOrDefault(s => s.RequestType == typeof(TRequest) &&
-                                                 s.ResponseType == typeof(TResponse));
-        if (type is null)
-            throw new InvalidOperationException(
-                $"No {ServiceCategory.Handler} found for request type {typeof(TRequest)} and response type {typeof(TResponse)}.");
+    protected override void Insert(HandlerDescriptor descriptor)
+        => _handlers[(descriptor.RequestType, descriptor.ResponseType)] = descriptor;
 
-        return type;
-    }
+    internal HandlerDescriptor GetHandler<TRequest, TResponse>()
+        => _handlers.TryGetValue((typeof(TRequest), typeof(TResponse)), out var descriptor)
+            ? descriptor
+            : throw new InvalidOperationException(
+                $"No Handler found for request type {typeof(TRequest)} and response type {typeof(TResponse)}.");
+
+    internal HandlerDescriptor GetHandler<TRequest>()
+        => _handlers.TryGetValue((typeof(TRequest), null), out var descriptor)
+            ? descriptor
+            : throw new InvalidOperationException(
+                $"No Handler found for request type {typeof(TRequest)}.");
 }

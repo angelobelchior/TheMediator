@@ -1,39 +1,29 @@
 using TheMediator.Core.Registries;
-using Microsoft.Extensions.DependencyInjection;
 using TheMediator.Core.Models;
 
 namespace TheMediator.Core.Tests.Registries;
 
 public class NotifierRegistryTests
 {
-    private readonly IServiceCollection _services = new ServiceCollection();
-
     [Fact]
-    public void Add_ShouldRegisterNotificationService()
+    public void Add_ShouldExposeNotificationType()
     {
         // Arrange
-        var registry = new NotifierRegistry(_services);
+        var registry = new NotifierRegistry();
 
         // Act
-        registry.Add<SampleNotification>();
+        registry.Add<SampleNotification, SampleMessage>();
 
         // Assert
-        var serviceDescriptor = _services.FirstOrDefault(s => s.ServiceType == typeof(SampleNotification));
-        Assert.NotNull(serviceDescriptor);
-        Assert.Equal(ServiceLifetime.Scoped, serviceDescriptor.Lifetime);
+        Assert.Contains(typeof(SampleNotification), registry.ServiceTypes);
     }
 
     [Fact]
     public void AddService_ShouldAddNotificationToList()
     {
         // Arrange
-        var services = new ServiceCollection();
-        var registry = new NotifierRegistry(services);
-        var notificationDescriptor = new Models.ServiceDescriptor(
-            typeof(SampleNotification),
-            typeof(SampleMessage),
-            typeof(Models.Void),
-            ServiceCategory.Notification);
+        var registry = new NotifierRegistry();
+        var notificationDescriptor = new NotificationDescriptor(typeof(SampleNotification), typeof(SampleMessage));
 
         // Act
         registry.Add(notificationDescriptor);
@@ -48,7 +38,7 @@ public class NotifierRegistryTests
     public void ListNotifiersByMessageType_ShouldReturnEmpty_WhenNoNotifiersRegistered()
     {
         // Arrange
-        var registry = new NotifierRegistry(_services);
+        var registry = new NotifierRegistry();
 
         // Act
         var notifiers = registry.ListNotifiersByMessageType<SampleMessage>();
@@ -61,13 +51,8 @@ public class NotifierRegistryTests
     public void Add_ShouldThrowException_WhenNotificationAlreadyRegistered()
     {
         // Arrange
-        var services = new ServiceCollection();
-        var registry = new NotifierRegistry(services);
-        var notificationDescriptor = new Models.ServiceDescriptor(
-            typeof(SampleNotification),
-            typeof(SampleMessage),
-            typeof(Models.Void),
-            ServiceCategory.Notification);
+        var registry = new NotifierRegistry();
+        var notificationDescriptor = new NotificationDescriptor(typeof(SampleNotification), typeof(SampleMessage));
 
         registry.Add(notificationDescriptor);
 
@@ -80,28 +65,11 @@ public class NotifierRegistryTests
     }
 
     [Fact]
-    public void Add_ShouldThrowException_WhenServiceDescriptorIsNotNotification()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-        var registry = new NotifierRegistry(services);
-        var invalidDescriptor = new Models.ServiceDescriptor(
-            typeof(SampleNotification),
-            typeof(SampleMessage),
-            typeof(Models.Void),
-            ServiceCategory.Filter);
-
-        // Act & Assert
-        var exception = Assert.Throws<InvalidOperationException>(() => registry.Add(invalidDescriptor));
-        Assert.Equal($"{invalidDescriptor.MainType} is not a notification type!", exception.Message);
-    }
-
-    [Fact]
     public void ListNotifiersByMessageType_ShouldReturnRegisteredNotifiers()
     {
         // Arrange
-        var registry = new NotifierRegistry(_services);
-        registry.Add<SampleNotification>();
+        var registry = new NotifierRegistry();
+        registry.Add<SampleNotification, SampleMessage>();
 
         // Act
         var notifiers = registry.ListNotifiersByMessageType<SampleMessage>();

@@ -1,5 +1,4 @@
 using TheMediator.Core.Executors;
-using TheMediator.Core.Inspectors;
 using TheMediator.Core.Registries;
 
 namespace TheMediator.Core.DependencyInjection;
@@ -20,19 +19,20 @@ public static class DependencyInjection
         this IServiceCollection services,
         Action<Configuration> configurator)
     {
-        var configuration = new Configuration(services);
+        var configuration = new Configuration();
         configurator(configuration);
 
-        services.AddScoped<HandlerRegistry>(_ => configuration.Handlers);
-        services.AddScoped<FilterRegistry>(_ => configuration.Filters);
-        services.AddScoped<NotifierRegistry>(_ => configuration.Notifiers);
+        configuration.Handlers.RegisterServices(services);
+        configuration.Filters.RegisterServices(services);
+        configuration.Notifiers.RegisterServices(services);
+
+        services.AddSingleton(configuration.Handlers);
+        services.AddSingleton(configuration.Filters);
+        services.AddSingleton(configuration.Notifiers);
 
         services.AddScoped<FilterExecutor>();
-        services.AddScoped<NotifierExecutor>();
-        services.AddScoped<HandlerExecutor>();
-
-        services.AddScoped<ISender, Sender>();
-        services.AddScoped<IPublisher, Publisher>();
+        services.AddScoped<ISender, HandlerExecutor>();
+        services.AddScoped<IPublisher, NotifierExecutor>();
 
         return services;
     }
@@ -45,47 +45,16 @@ public static class DependencyInjection
         /// <summary>
         /// Handler registry for TheMediator.
         /// </summary>
-        public HandlerRegistry Handlers { get; }
+        public HandlerRegistry Handlers { get; } = new();
+
         /// <summary>
         /// Filter registry for TheMediator.
         /// </summary>
-        public FilterRegistry Filters { get; }
+        public FilterRegistry Filters { get; } = new();
+
         /// <summary>
         /// Notifier registry for TheMediator.
         /// </summary>
-        public NotifierRegistry Notifiers { get; }
-
-        internal Configuration(IServiceCollection services)
-        {
-            Handlers = new(services);
-            Filters = new(services);
-            Notifiers = new(services);
-        }
-
-        /// <summary>
-        /// Adds services from the specified assemblies to TheMediator.
-        /// </summary>
-        /// <param name="assemblies">Assemblies</param>
-        /// <returns>Configuration</returns>
-        /// <exception cref="ArgumentNullException">When assemblies is null or empty</exception>
-        public Configuration AddServicesFromAssemblies(params Assembly[] assemblies)
-        {
-            if (assemblies is null || assemblies.Length == 0)
-                throw new ArgumentNullException(nameof(assemblies), "Assemblies cannot be null or empty.");
-
-            assemblies
-                .Select(ServiceInspector.GetServicesByAssembly)
-                .SelectMany(serviceType => serviceType)
-                .ToList()
-                .ForEach(serviceDescriptor =>
-                {
-                    if (serviceDescriptor.Category == ServiceCategory.Handler)
-                        Handlers.Add(serviceDescriptor);
-                    if (serviceDescriptor.Category == ServiceCategory.Notification)
-                        Notifiers.Add(serviceDescriptor);
-                });
-
-            return this;
-        }
+        public NotifierRegistry Notifiers { get; } = new();
     }
 }
