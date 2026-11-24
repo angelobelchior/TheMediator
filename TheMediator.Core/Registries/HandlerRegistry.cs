@@ -17,41 +17,30 @@ public class HandlerRegistry : ServiceRegistry<HandlerDescriptor>
         where TRequest : notnull
         => Add(new HandlerDescriptor(typeof(THandler), typeof(TRequest), null));
 
-    private readonly HashSet<HandlerDescriptor> _handlers = new();
+    private readonly Dictionary<(Type RequestType, Type? ResponseType), HandlerDescriptor> _handlers = new();
 
-    protected override IEnumerable<HandlerDescriptor> Entries => _handlers;
+    protected override IEnumerable<HandlerDescriptor> Entries => _handlers.Values;
 
     protected override void EnsureUnique(HandlerDescriptor descriptor)
     {
-        var current = _handlers.FirstOrDefault(s => s.RequestType == descriptor.RequestType &&
-                                                    s.ResponseType == descriptor.ResponseType);
-        if (current is not null)
+        if (_handlers.ContainsKey((descriptor.RequestType, descriptor.ResponseType)))
             throw new InvalidOperationException(
                 $"Cannot register {descriptor.MainType}!.\n" +
-                $"The handler {current.MainType} is already registered with the same request {descriptor.RequestType} and response {descriptor.ResponseType} types.");
+                $"The handler for request {descriptor.RequestType} and response {descriptor.ResponseType} types is already registered.");
     }
 
-    protected override void Insert(HandlerDescriptor descriptor) => _handlers.Add(descriptor);
+    protected override void Insert(HandlerDescriptor descriptor)
+        => _handlers[(descriptor.RequestType, descriptor.ResponseType)] = descriptor;
 
     internal HandlerDescriptor GetHandler<TRequest, TResponse>()
-    {
-        var type = _handlers.FirstOrDefault(s => s.RequestType == typeof(TRequest) &&
-                                                 s.ResponseType == typeof(TResponse));
-        if (type is null)
-            throw new InvalidOperationException(
+        => _handlers.TryGetValue((typeof(TRequest), typeof(TResponse)), out var descriptor)
+            ? descriptor
+            : throw new InvalidOperationException(
                 $"No Handler found for request type {typeof(TRequest)} and response type {typeof(TResponse)}.");
 
-        return type;
-    }
-
     internal HandlerDescriptor GetHandler<TRequest>()
-    {
-        var type = _handlers.FirstOrDefault(s => s.RequestType == typeof(TRequest) &&
-                                                 s.ResponseType is null);
-        if (type is null)
-            throw new InvalidOperationException(
+        => _handlers.TryGetValue((typeof(TRequest), null), out var descriptor)
+            ? descriptor
+            : throw new InvalidOperationException(
                 $"No Handler found for request type {typeof(TRequest)}.");
-
-        return type;
-    }
 }

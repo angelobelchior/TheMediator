@@ -19,6 +19,22 @@ public class FilterRegistry : ServiceRegistry<FilterDescriptor>
 
     protected override void Insert(FilterDescriptor descriptor) => _filters.Push(descriptor);
 
-    internal IEnumerable<FilterDescriptor> ListFiltersWithRequest<TRequest>()
-        => _filters.Where(f => f.RequestType is null || f.RequestType == typeof(TRequest));
+    internal IReadOnlyList<FilterDescriptor> ListFiltersWithRequest<TRequest>()
+    {
+        var type = typeof(TRequest);
+        List<FilterDescriptor>? result = null;
+
+        foreach (var filter in _filters)
+        {
+            if (filter.RequestType is null || filter.RequestType == type)
+            {
+                result ??= new List<FilterDescriptor>();
+                result.Add(filter);
+            }
+        }
+
+        return result is null
+            ? Array.Empty<FilterDescriptor>()
+            : result;
+    }
 }

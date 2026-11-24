@@ -10,6 +10,7 @@ public class NotifierRegistry : ServiceRegistry<NotificationDescriptor>
         => Add(new NotificationDescriptor(typeof(TNotifier), typeof(TMessage)));
 
     private readonly List<NotificationDescriptor> _notifications = new();
+    private readonly Dictionary<Type, List<NotificationDescriptor>> _byMessageType = new();
 
     [ExcludeFromCodeCoverage]
     public NotificationSettings Settings { get; set; } = NotificationSettings.None;
@@ -27,8 +28,17 @@ public class NotifierRegistry : ServiceRegistry<NotificationDescriptor>
                 $"The Notification {current.MainType} is already registered");
     }
 
-    protected override void Insert(NotificationDescriptor descriptor) => _notifications.Add(descriptor);
+    protected override void Insert(NotificationDescriptor descriptor)
+    {
+        _notifications.Add(descriptor);
 
-    internal IReadOnlyCollection<NotificationDescriptor> ListNotifiersByMessageType<TMessageType>()
-        => _notifications.Where(s => s.MessageType == typeof(TMessageType)).ToList();
+        if (!_byMessageType.TryGetValue(descriptor.MessageType, out var list))
+            _byMessageType[descriptor.MessageType] = list = new List<NotificationDescriptor>();
+        list.Add(descriptor);
+    }
+
+    internal IReadOnlyList<NotificationDescriptor> ListNotifiersByMessageType<TMessageType>()
+        => _byMessageType.TryGetValue(typeof(TMessageType), out var list)
+            ? list
+            : Array.Empty<NotificationDescriptor>();
 }

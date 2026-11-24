@@ -2,63 +2,87 @@ using TheMediator.Core.Registries;
 
 namespace TheMediator.Core.Executors;
 
-internal class FilterExecutor(
+internal partial class FilterExecutor(
     ILoggerFactory loggerFactory,
     IServiceProvider serviceProvider,
     FilterRegistry filterRegistry)
 {
     private readonly ILogger logger = loggerFactory.CreateLogger(Constants.LogCategoryName);
 
-    public Task Execute<TRequest>(
-        TRequest request,
-        Func<Task> function,
-        CancellationToken cancellationToken)
-        where TRequest : notnull
-        => Execute<TRequest, Models.Void>(
-            request,
-            async () =>
-            {
-                await function();
-                return Models.Void.Null;
-            },
-            cancellationToken);
+    [LoggerMessage(LogLevel.Trace, "Executing filter {Filter} for request {Request}")]
+    private static partial void LogExecutingFilter(ILogger logger, string filter, string request);
 
-    public Task<TResponse> Execute<TRequest, TResponse>(
+    [LoggerMessage(LogLevel.Trace, "Executed filter {Filter} for request {Request}")]
+    private static partial void LogExecutedFilter(ILogger logger, string filter, string request);
+
+    public Task Execute<TRequest>(
+        IRequestHandler<TRequest> handler,
         TRequest request,
-        Func<Task<TResponse>> function,
         CancellationToken cancellationToken)
         where TRequest : notnull
     {
-        var task = filterRegistry.ListFiltersWithRequest<TRequest>()
-            .Select(f => serviceProvider.GetRequiredService(f.MainType))
-            .Aggregate(
-                function,
-                (acc, source) => () =>
-                {
-                    logger.LogTrace(
-                        "Executing filter {Filter} for request {Request}",
-                        source.GetType().Name,
-                        request.GetType().Name);
+        var filters = filterRegistry.ListFiltersWithRequest<TRequest>();
+        if (filters.Count == 0)
+            return handler.HandleAsync(request, cancellationToken);
 
-                    cancellationToken.ThrowIfCancellationRequested();
+        Func<Task<Models.Void>> function = async () =>
+        {
+            await handler.HandleAsync(request, cancellationToken);
+            return Models.Void.Null;
+        };
 
-                    var response = source switch
-                    {
-                        IRequestFilter filter => filter.FilterAsync(request, acc, cancellationToken),
-                        IRequestFilter<TRequest> requestFilter => requestFilter.FilterAsync(request, acc,
-                            cancellationToken),
-                        _ => throw new InvalidOperationException(
-                            $"Filter {source.GetType().Name} does not implement IRequestFilter or IRequestFilter<{typeof(TRequest).Name}>")
-                    };
+        foreach (var descriptor in filters)
+        {
+            var source = serviceProvider.GetRequiredService(descriptor.MainType);
+            var next = function;
+            function = () => InvokeFilter<TRequest, Models.Void>(source, request, next, cancellationToken);
+        }
 
-                    logger.LogTrace(
-                        "Executed filter {Filter} for request {Request}",
-                        source.GetType().Name,
-                        request.GetType().Name);
+        return function();
+    }
 
-                    return response;
-                });
+    public Task<TResponse> Execute<TRequest, TResponse>(
+        IRequestHandler<TRequest, TResponse> handler,
+        TRequest request,
+        CancellationToken cancellationToken)
+        where TRequest : notnull
+    {
+        var filters = filterRegistry.ListFiltersWithRequest<TRequest>();
+        if (filters.Count == 0)
+            return handler.HandleAsync(request, cancellationToken);
 
-        return task();
+        Func<Task<TResponse>> function = () => handler.HandleAsync(request, cancellationToken);
+
+        foreach (var descriptor in filters)
+        {
+            var source = serviceProvider.GetRequiredService(descriptor.MainType);
+            var next = function;
+            function = () => InvokeFilter<TRequest, TResponse>(source, request, next, cancellationToken);
+        }
+
+        return function();
+    }
+
+    private Task<TResponse> InvokeFilter<TRequest, TResponse>(
+        object source,
+        TRequest request,
+        Func<Task<TResponse>> next,
+        CancellationToken cancellationToken)
+        where TRequest : notnull
+    {
+        LogExecutingFilter(logger, source.GetType().Name, request.GetType().Name);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var response = source switch
+        {
+            IRequestFilter filter => filter.FilterAsync<TRequest, TResponse>(request, next, cancellationToken),
+            IRequestFilter<TRequest> requestFilter => requestFilter.FilterAsync(request, next, cancellationToken),
+            _ => throw new InvalidOperationException(
+                $"Filter {source.GetType().Name} does not implement IRequestFilter or IRequestFilter<{typeof(TRequest).Name}>")
+        };
+
+        LogExecutedFilter(logger, source.GetType().Name, request.GetType().Name);
+
+        return response;
     }
 }

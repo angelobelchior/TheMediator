@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using TheMediator.Core;
 using TheMediator.Core.Executors;
 using TheMediator.Core.Registries;
 
@@ -10,7 +11,6 @@ public class FilterExecutorTests
     [Fact]
     public async Task Execute_ShouldRunFiltersInRegistrationOrderAroundHandler()
     {
-        // Arrange
         var log = new List<string>();
         var services = new ServiceCollection();
         services.AddSingleton(log);
@@ -23,17 +23,11 @@ public class FilterExecutorTests
 
         var executor = new FilterExecutor(NullLoggerFactory.Instance, serviceProvider, registry);
 
-        // Act
         var response = await executor.Execute<SampleRequest, string>(
+            new TestResponseHandler(log),
             new SampleRequest(),
-            () =>
-            {
-                log.Add("handler");
-                return Task.FromResult("ok");
-            },
             CancellationToken.None);
 
-        // Assert
         Assert.Equal("ok", response);
         Assert.Equal(
             ["first:before", "second:before", "handler", "second:after", "first:after"],
@@ -43,7 +37,6 @@ public class FilterExecutorTests
     [Fact]
     public async Task Execute_WithoutResponse_ShouldRunFiltersAroundVoidHandler()
     {
-        // Arrange
         var log = new List<string>();
         var services = new ServiceCollection();
         services.AddSingleton(log);
@@ -56,20 +49,32 @@ public class FilterExecutorTests
 
         var executor = new FilterExecutor(NullLoggerFactory.Instance, serviceProvider, registry);
 
-        // Act
         await executor.Execute<SampleRequest>(
+            new TestVoidHandler(log),
             new SampleRequest(),
-            () =>
-            {
-                log.Add("handler");
-                return Task.CompletedTask;
-            },
             CancellationToken.None);
 
-        // Assert
         Assert.Equal(
             ["first:before", "second:before", "handler", "second:after", "first:after"],
             log);
+    }
+
+    private sealed class TestResponseHandler(List<string> log) : IRequestHandler<SampleRequest, string>
+    {
+        public Task<string> HandleAsync(SampleRequest request, CancellationToken cancellationToken)
+        {
+            log.Add("handler");
+            return Task.FromResult("ok");
+        }
+    }
+
+    private sealed class TestVoidHandler(List<string> log) : IRequestHandler<SampleRequest>
+    {
+        public Task HandleAsync(SampleRequest request, CancellationToken cancellationToken)
+        {
+            log.Add("handler");
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class FirstFilter(List<string> log) : IRequestFilter
