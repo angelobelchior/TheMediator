@@ -43,7 +43,7 @@ builder.Services.AddTheMediator(configuration =>
 
 A partir da versão 2.0, o **TheMediator** é compatível com **Native AOT** e **trimming** (target `net9.0`, `IsAotCompatible` + `IsTrimmable`).
 
-O registro dos `Handlers`, `Notifications` e `Filters` é feito automaticamente por um **source generator**: ele detecta os tipos que implementam `IRequestHandler`/`INotificationHandler`/`IRequestFilter` e emite, em tempo de compilação, a classe estática `TheMediator.Generated.TheMediatorDI` com o método de extensão `Register()`. Esse caminho é 100% livre de reflection — necessário para AOT.
+O registro dos `Handlers`, `Notifications` e `Filters` é feito automagicamente por um **source generator**: ele detecta os tipos que implementam `IRequestHandler`/`INotificationHandler`/`IRequestFilter` e emite, em tempo de compilação, a classe estática `TheMediator.Generated.TheMediatorDI` com o método de extensão `Register()`. Esse caminho é 100% livre de reflection — necessário para AOT.
 
 O método antigo `AddServicesFromAssemblies` foi removido na versão 2.0 — ele usava reflection (`Assembly.GetTypes`) e era incompatível com AOT/trimming. O registro é feito exclusivamente pelo source generator ou pelo registro tipado (`Handlers.Add<THandler, TRequest, TResponse>()`, `Notifiers.Add<TNotifier, TMessage>()`, `Filters.Add<TFilter>()`, etc.).
 
@@ -191,3 +191,15 @@ Para mudar essa configuração é necessário mudar o level do logger no `appset
   }
 }
 ```
+
+## Benchmarks
+
+O projeto `TheMediator.Benchmarks` usa [BenchmarkDotNet](https://benchmarkdotnet.org/) para medir throughput e alocações do Mediator.
+
+Para executar:
+
+```bash
+dotnet run --project TheMediator.Benchmarks -c Release -- --filter '*'
+```
+
+Os cenários medidos são: chamada direta ao handler (baseline), `Send`, `SendWithFilter` e `Publish`.
