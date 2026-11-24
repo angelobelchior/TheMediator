@@ -9,6 +9,7 @@ using TheMediator.Core.Models;
 namespace TheMediator.Benchmarks;
 
 [MemoryDiagnoser]
+[SimpleJob(launchCount: 3, warmupCount: 10, iterationCount: 100)]
 public class MediatorBenchmarks
 {
     private readonly PingHandler _handler = new();
