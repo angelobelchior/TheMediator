@@ -13,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddTheMediator(configuration =>
 {
-    configuration.Register();
+    configuration.RegisterFromAssembly<Program>();
     configuration.Filters.Add<MeasureTimeRequestFilter>();
     configuration.Filters.Add<LoggerRequestFilter>();
     configuration.Filters.Add<SpecificFilter, ProductRequest>();

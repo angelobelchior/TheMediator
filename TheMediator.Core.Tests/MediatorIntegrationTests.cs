@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using TheMediator.Core;
 using TheMediator.Core.DependencyInjection;
 using TheMediator.Core.Models;
+using TheMediator.Core.Tests.External;
 using TheMediator.Generated;
 
 namespace TheMediator.Core.Tests;
@@ -20,7 +21,7 @@ public class MediatorIntegrationTests
 
         services.AddTheMediator(configuration =>
         {
-            configuration.Register();
+            configuration.RegisterFromAssembly<Ping>();
             configuration.Filters.Add<IntegrationFilter>();
             configuration.Notifiers.Settings.DeliveryMode = NotificationDeliveryMode.WaitAll;
         });
@@ -38,6 +39,33 @@ public class MediatorIntegrationTests
         Assert.Equal(
             ["filter:before", "filter:after", "notified:done"],
             log);
+    }
+
+    [Fact]
+    public async Task SendAndPublish_ShouldWork_UsingCrossAssemblyRegistration()
+    {
+        var log = new List<string>();
+        var services = new ServiceCollection();
+        services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
+        services.AddSingleton(log);
+
+        services.AddTheMediator(configuration =>
+        {
+            configuration.RegisterFromAssembly<ExternalMarker>();
+        });
+
+        await using var provider = services.BuildServiceProvider();
+
+        var sender = provider.GetRequiredService<ISender>();
+        var response =
+            await sender.SendAsync<ExternalPing, ExternalPong>(new ExternalPing("hello"), CancellationToken.None);
+
+        Assert.Equal("external-pong:hello", response.Message);
+
+        var publisher = provider.GetRequiredService<IPublisher>();
+        await publisher.PublishAsync(new ExternalPinged("done"), CancellationToken.None);
+
+        Assert.Equal(["external-notified:done"], log);
     }
 }
 

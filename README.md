@@ -32,20 +32,25 @@ using TheMediator.Generated;
 
 builder.Services.AddTheMediator(configuration =>
 {
-    configuration.Register();
+    configuration.RegisterFromAssembly<Program>();
     configuration.Notifiers.Settings.DeliveryMode = NotificationDeliveryMode.FireAndForget;
 });
 ```
 
-`Register()` é o método de extensão gerado pelo source generator (namespace `TheMediator.Generated`).
+`RegisterFromAssembly<T>()` é o método de extensão gerado pelo source generator (namespace `TheMediator.Generated`). Ele registra os `Handlers` e `Notifications` do assembly que contém o tipo `T`. Para registrar handlers/notifications de outros assemblies, basta chamar o método para um tipo de cada assembly:
+
+```csharp
+configuration.RegisterFromAssembly<Program>();
+configuration.RegisterFromAssembly<SomeTypeInAnotherAssembly>();
+```
 
 ## AOT e Source Generator
 
 A partir da versão 2.0, o **TheMediator** é compatível com **Native AOT** e **trimming** (target `net9.0`, `IsAotCompatible` + `IsTrimmable`).
 
-O registro dos `Handlers` e `Notifications` é feito automagicamente por um **source generator**: ele detecta os tipos que implementam `IRequestHandler`/`INotificationHandler` e emite, em tempo de compilação, a classe estática `TheMediator.Generated.TheMediatorDI` com o método de extensão `Register()`. Os `Filters` são registrados manualmente. Esse caminho é 100% livre de reflection — necessário para AOT.
+O registro dos `Handlers` e `Notifications` é feito automagicamente por um **source generator**: ele detecta os tipos que implementam `IRequestHandler`/`INotificationHandler` e emite, em tempo de compilação, a classe estática `TheMediator.Generated.TheMediatorDI` com o método de extensão `RegisterFromAssembly<T>()`. Cada assembly que contém handlers/notifications recebe um atributo `[assembly: TheMediatorImplementation(...)]` listando esses tipos, permitindo que o `RegisterFromAssembly<T>()` de outro projeto os registre ao apontar para qualquer tipo (`T`) daquele assembly. Os `Filters` são registrados manualmente. Esse caminho é 100% livre de reflection — necessário para AOT.
 
-O método antigo `AddServicesFromAssemblies` foi removido na versão 2.0 — ele usava reflection (`Assembly.GetTypes`) e era incompatível com AOT/trimming. O registro é feito exclusivamente pelo source generator ou pelo registro tipado (`Handlers.Add<THandler, TRequest, TResponse>()`, `Notifiers.Add<TNotifier, TMessage>()`, `Filters.Add<TFilter>()`, etc.).
+O método antigo `AddServicesFromAssemblies` foi removido na versão 2.0 — ele usava reflection (`Assembly.GetTypes`) e era incompatível com AOT/trimming. O `Register()` (introduzido na 2.0) foi substituído pelo `RegisterFromAssembly<T>()`, que também registra handlers/notifications de outros assemblies. O registro é feito exclusivamente pelo source generator ou pelo registro tipado (`Handlers.Add<THandler, TRequest, TResponse>()`, `Notifiers.Add<TNotifier, TMessage>()`, `Filters.Add<TFilter>()`, etc.).
 
 # Funcionalidades
 
@@ -58,7 +63,7 @@ Eles implementam a interface `IRequestHandler<TRequest, TResponse>`, onde `TRequ
 
 É possível ter mais de um `Handler` para o mesmo tipo de requisição (`TRequest`) contanto que o `TResponse` seja diferente.
 
-Os `Handlers` são registrados automaticamente pelo source generator (`configuration.Register()`).
+Os `Handlers` são registrados automaticamente pelo source generator (`configuration.RegisterFromAssembly<T>()`).
 
 Exemplo de uso:
 
@@ -135,7 +140,7 @@ As `Notifications` permitem enviar mensagens para múltiplos `handlers` de forma
 
 O DeliveryMode padrão é `FireAndForget`, e ele pode ser configurado no `AddTheMediator`.
 
-As `Notifications` são registradas automaticamente pelo source generator (`configuration.Register()`).
+As `Notifications` são registradas automaticamente pelo source generator (`configuration.RegisterFromAssembly<T>()`).
 
 Exemplo de uso:
 

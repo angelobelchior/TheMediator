@@ -35,6 +35,7 @@
                           OutputItemType="Analyzer"
                           ReferenceOutputAssembly="false"
                           SetTargetFramework="TargetFramework=netstandard2.0" />
+        <ProjectReference Include="..\TheMediator.Core.Tests.External\TheMediator.Core.Tests.External.csproj" />
     </ItemGroup>
 
     <ItemGroup>
