@@ -10,7 +10,7 @@
         <WarningsAsErrors>CA2000</WarningsAsErrors>
         <NoWarn>1701;1702;NU5100;NU5104</NoWarn>
 
-        <Version>2.0.1</Version>
+        <Version>2.0.2</Version>
         <Authors>Angelo Belchior</Authors>
         <Title>A Free and Open-Source Mediator Pattern Implementation for .NET</Title>
         <Description>

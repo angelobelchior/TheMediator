@@ -1,6 +1,6 @@
 # TheMediator
 
-<img src="./TheMediator.Core/icon.png" alt="drawing" style="width:200px;"/>
+<p align="center"><img src="./TheMediator.Core/icon.png" alt="TheMediator logo" width="200"/></p>
 
 [![.NET](https://github.com/angelobelchior/TheMediator/actions/workflows/dotnet-cicd-publish.yml/badge.svg)](https://github.com/angelobelchior/TheMediator/actions/workflows/dotnet-cicd-publish.yml)
 
