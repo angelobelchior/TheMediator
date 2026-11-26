@@ -17,6 +17,14 @@ Foram 3 posts no total:
 - https://dev.to/angelobelchior/reinventando-a-roda-criando-seu-proprio-mediatr-parte-2-1c8e
 - https://dev.to/angelobelchior/reinventando-a-roda-criando-seu-proprio-mediatr-parte-3-3gp1
 
+## Documentação
+
+Para documentação completa em português, acesse: https://angelobelchior.com.br/os/TheMediator?lang=pt
+
+For complete English documentation, access: https://angelobelchior.com.br/os/TheMediator?lang=en
+
+Para la documentación completa en español, accede: https://angelobelchior.com.br/os/TheMediator?lang=es
+
 ## Instalação
 
 Você pode instalar o pacote via NuGet usando o seguinte comando:
